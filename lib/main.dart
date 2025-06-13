@@ -154,13 +154,13 @@ class _MyAppState extends State<MyApp> {
         
         // Checkbox Theme: consistent look for Checkbox
         checkboxTheme: CheckboxThemeData(
-          fillColor: MaterialStateProperty.resolveWith((states) {
-            if (states.contains(MaterialState.selected)) {
+          fillColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) {
               return const Color(0xFF8BC34A); // Green when checked
             }
             return Colors.grey; // Grey when unchecked
           }),
-          checkColor: MaterialStateProperty.all(Colors.white), // White checkmark
+          checkColor: WidgetStateProperty.all(Colors.white), // White checkmark
         ),
 
         // Define a TextTheme for consistent typography across the app

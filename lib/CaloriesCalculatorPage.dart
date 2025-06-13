@@ -25,7 +25,7 @@ class _CaloriesCalculatorPageState extends State<CaloriesCalculatorPage> {
 
   List<Map<String, dynamic>> _filteredFoodItems = [];
 
-  List<Map<String, dynamic>> _selectedItemsForMeal = [];
+  final List<Map<String, dynamic>> _selectedItemsForMeal = [];
 
   RangeValues _calorieRangeFilter = const RangeValues(0, 1000);
   bool _filterHighProtein = false;
