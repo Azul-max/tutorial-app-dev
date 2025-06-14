@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+// Removed: import 'package:flutter_svg/flutter_svg.dart'; // No longer needed for Icon
 
 import 'MainMenuPage.dart';
 import 'SignUpPage.dart';
@@ -106,20 +107,25 @@ class _SignInPageState extends State<SignInPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Use a Stack to layer the background gradient and the content
       body: Stack(
         children: [
-          // Background Gradient
+          // Background Gradient (Updated for Earthy & Muted palette)
           Container(
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Theme.of(context).primaryColor.withOpacity(0.8), // Start with primary color
-                  Theme.of(context).hintColor.withOpacity(0.9),    // End with accent color
+                  Color.fromARGB(255, 167, 240, 104), // Muted Primary Green (darker for top left)
+                  Color(0xFFDCEDC8), // Light Muted Secondary Green (lighter for bottom right)
                 ],
               ),
+            ),
+          ),
+          // Optional: Add an overlay for better text readability
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.2), // Lighter overlay for contrast
             ),
           ),
           // Content Scrollable View
@@ -132,31 +138,28 @@ class _SignInPageState extends State<SignInPage> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // App Logo (Enhanced Prominence)
-                    // Added more vertical padding around the logo
+                    // App Logo (Now using a Flutter Icon)
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 20.0),
-                      child: Image.asset(
-                        'assets/logo.png', // Ensure this path is correct in pubspec.yaml
-                        height: 150, // Increased height for more prominence
-                        errorBuilder: (context, error, stackTrace) {
-                          return Icon(Icons.fitness_center, size: 120, color: Colors.white); // Larger fallback
-                        },
+                      child: Icon( // Changed from SvgPicture.asset to Icon
+                        Icons.restaurant_menu, // A suitable food-related icon
+                        size: 150, // Maintain a large size
+                        color: const Color(0xFF689F38), // Muted Primary Green for logo
                       ),
                     ),
-                    const SizedBox(height: 16), // Adjusted spacing
+                    const SizedBox(height: 16),
 
                     // Welcome Text
                     Text(
                       'Welcome to Calorie Tracker!',
                       textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: Colors.white), // White text for contrast
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: const Color(0xFFEEEEEE)), // Light Neutral for text
                     ),
                     const SizedBox(height: 8),
                     Text(
                       'Sign in or Sign up to continue',
                       textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.white70), // Lighter white
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: const Color(0xFFBDBDBD)), // Hint/Subtle Text color
                     ),
                     const SizedBox(height: 32),
 
@@ -166,16 +169,15 @@ class _SignInPageState extends State<SignInPage> {
                       decoration: InputDecoration(
                         labelText: 'Username',
                         hintText: 'Enter your username',
-                        prefixIcon: const Icon(Icons.person_outline), // Icon color from theme
-                        // Inherit other styles from InputDecorationTheme
+                        prefixIcon: const Icon(Icons.person_outline, color: Color(0xFF424242)), // Dark Neutral for icons
                         filled: true,
-                        fillColor: Colors.white.withOpacity(0.9), // Slightly transparent white fill
+                        fillColor: const Color(0xFFEEEEEE).withOpacity(0.9), // Light Neutral for fill
                         border: Theme.of(context).inputDecorationTheme.border,
                         enabledBorder: Theme.of(context).inputDecorationTheme.enabledBorder,
                         focusedBorder: Theme.of(context).inputDecorationTheme.focusedBorder,
                         contentPadding: Theme.of(context).inputDecorationTheme.contentPadding,
-                        labelStyle: Theme.of(context).inputDecorationTheme.labelStyle?.copyWith(color: Colors.black87), // Label color
-                        hintStyle: Theme.of(context).inputDecorationTheme.hintStyle, // Hint color
+                        labelStyle: Theme.of(context).inputDecorationTheme.labelStyle?.copyWith(color: const Color(0xFF424242)), // Dark Neutral for label
+                        hintStyle: Theme.of(context).inputDecorationTheme.hintStyle?.copyWith(color: const Color(0xFFBDBDBD)), // Hint/Subtle Text color
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
@@ -194,26 +196,26 @@ class _SignInPageState extends State<SignInPage> {
                       decoration: InputDecoration(
                         labelText: 'Password',
                         hintText: 'Enter your password',
-                        prefixIcon: const Icon(Icons.lock_outline),
+                        prefixIcon: const Icon(Icons.lock_outline, color: Color(0xFF424242)), // Dark Neutral for icons
                         suffixIcon: IconButton(
                           icon: Icon(
                             _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
-                          ), // Icon color from theme
+                            color: const Color(0xFF424242), // Dark Neutral for visibility icon
+                          ),
                           onPressed: () {
                             setState(() {
                               _isPasswordVisible = !_isPasswordVisible;
                             });
                           },
                         ),
-                        // Inherit other styles from InputDecorationTheme
                         filled: true,
-                        fillColor: Colors.white.withOpacity(0.9), // Slightly transparent white fill
+                        fillColor: const Color(0xFFEEEEEE).withOpacity(0.9), // Light Neutral for fill
                         border: Theme.of(context).inputDecorationTheme.border,
                         enabledBorder: Theme.of(context).inputDecorationTheme.enabledBorder,
                         focusedBorder: Theme.of(context).inputDecorationTheme.focusedBorder,
                         contentPadding: Theme.of(context).inputDecorationTheme.contentPadding,
-                        labelStyle: Theme.of(context).inputDecorationTheme.labelStyle?.copyWith(color: Colors.black87),
-                        hintStyle: Theme.of(context).inputDecorationTheme.hintStyle,
+                        labelStyle: Theme.of(context).inputDecorationTheme.labelStyle?.copyWith(color: const Color(0xFF424242)), // Dark Neutral for label
+                        hintStyle: Theme.of(context).inputDecorationTheme.hintStyle?.copyWith(color: const Color(0xFFBDBDBD)), // Hint/Subtle Text color
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
@@ -233,7 +235,7 @@ class _SignInPageState extends State<SignInPage> {
                       children: [
                         Expanded(
                           child: CheckboxListTile(
-                            title: Text('Remember Me', style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.white)), // White text
+                            title: Text('Remember Me', style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: const Color(0xFFEEEEEE))), // Light Neutral for text
                             value: _rememberMe,
                             onChanged: (bool? newValue) {
                               setState(() {
@@ -242,8 +244,8 @@ class _SignInPageState extends State<SignInPage> {
                             },
                             controlAffinity: ListTileControlAffinity.leading,
                             contentPadding: EdgeInsets.zero,
-                            activeColor: Colors.white, // White checkbox fill
-                            checkColor: Theme.of(context).primaryColor, // Green checkmark
+                            activeColor: const Color(0xFF689F38), // Muted Primary Green for active state
+                            checkColor: const Color(0xFFEEEEEE), // Light Neutral for checkmark
                           ),
                         ),
                         TextButton(
@@ -252,25 +254,30 @@ class _SignInPageState extends State<SignInPage> {
                               const SnackBar(content: Text('Forgot Password functionality coming soon!')),
                             );
                           },
-                          // TextButton style is now inherited from Theme.of(context).textButtonTheme
                           child: const Text(
                             'Forgot Password?',
+                            style: TextStyle(color: Color(0xFF689F38)), // Muted Primary Green for link
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 24),
 
-                    // Sign In Button
                     ElevatedButton(
-                      style: Theme.of(context).elevatedButtonTheme.style, // Inherit button style from theme
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF689F38), // Muted Primary Green
+                        foregroundColor: Colors.white, // White text on button
+                        shape: Theme.of(context).elevatedButtonTheme.style?.shape?.resolve({}),
+                        padding: Theme.of(context).elevatedButtonTheme.style?.padding?.resolve({}),
+                        elevation: Theme.of(context).elevatedButtonTheme.style?.elevation?.resolve({}),
+                      ),
                       onPressed: _isLoading ? null : _signIn,
                       child: _isLoading
                           ? const SizedBox(
                               height: 20,
                               width: 20,
                               child: CircularProgressIndicator(
-                                color: Colors.white, // White spinner
+                                color: Colors.white,
                                 strokeWidth: 2,
                               ),
                             )
@@ -281,13 +288,12 @@ class _SignInPageState extends State<SignInPage> {
                     ),
                     const SizedBox(height: 20),
 
-                    // Sign Up Link
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
                           "Don't have an account?",
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.white70), // Lighter white
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: const Color(0xFFBDBDBD)), // Hint/Subtle Text color
                         ),
                         TextButton(
                           onPressed: () {
@@ -298,6 +304,7 @@ class _SignInPageState extends State<SignInPage> {
                           },
                           child: const Text(
                             'Sign Up',
+                            style: TextStyle(color: Color(0xFF689F38)), // Muted Primary Green for link
                           ),
                         ),
                       ],

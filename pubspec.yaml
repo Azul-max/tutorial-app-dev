@@ -25,10 +25,3 @@ dev_dependencies:
 # The flutter section is typically at the end
 flutter:
   uses-material-design: true
-
-  # Ensure your assets are correctly listed and indented.
-  # If 'assets/' contains subfolders, list them too.
-  assets:
-    - assets/ # This means all files directly inside the 'assets' folder
-    # If you had images in assets/images, you'd add:
-    # - assets/images/
