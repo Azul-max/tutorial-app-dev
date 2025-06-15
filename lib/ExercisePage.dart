@@ -21,10 +21,10 @@ class _ExercisePageState extends State<ExercisePage> {
     List<String> meals = prefs.getStringList('meals') ?? [];
 
     final newEntry = {
-      'name': _exerciseController.text,
-      'type': 'Exercise',
-      'cal': int.tryParse(_caloriesBurnedController.text) ?? 0,
-      'dateTime': DateTime.now().toIso8601String(),
+    'name': _exerciseController.text,
+    'type': 'Exercise', // This is good, consistent with 'type' for meals
+    'cal': int.tryParse(_caloriesBurnedController.text) ?? 0,
+    'dateTime': DateTime.now().toIso8601String(),
     };
 
     meals.add(jsonEncode(newEntry));

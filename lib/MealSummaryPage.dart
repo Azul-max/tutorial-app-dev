@@ -35,6 +35,18 @@ class _MealSummaryPageState extends State<MealSummaryPage> {
     return _currentMealItems.fold(0, (sum, item) => sum + (item['calories'] as int));
   }
 
+  int _getMealTotalProtein() {
+    return _currentMealItems.fold(0, (sum, item) => sum + (item['protein'] as int? ?? 0));
+  }
+
+  int _getMealTotalCarbs() {
+    return _currentMealItems.fold(0, (sum, item) => sum + (item['carbs'] as int? ?? 0));
+  }
+
+  int _getMealTotalFat() {
+    return _currentMealItems.fold(0, (sum, item) => sum + (item['fat'] as int? ?? 0));
+  }
+
   void _removeMealItem(Map<String, dynamic> itemToRemove) {
     setState(() {
       _currentMealItems.remove(itemToRemove);
@@ -56,16 +68,29 @@ class _MealSummaryPageState extends State<MealSummaryPage> {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     // 1. Save to main meal history (for HistoryPage)
     List<String> mealHistoryStrings = prefs.getStringList('meals') ?? [];
+
+    // Calculate total macros for the meal
+    final int totalProtein = _getMealTotalProtein();
+    final int totalCarbs = _getMealTotalCarbs();
+    final int totalFat = _getMealTotalFat();
+
     final newMealEntry = {
       'name': widget.mealType,
       'type': 'Meal',
       'cal': _getMealTotalCalories(),
+      'protein': totalProtein, // Added total protein for the meal
+      'carbs': totalCarbs,     // Added total carbs for the meal
+      'fat': totalFat,         // Added total fat for the meal
       'ingredients': _currentMealItems.map((item) => {
         'name': item['name'],
         'cal': item['calories'],
         'qty': item['serving'],
         'unit': item['unit'],
-        'emoji': item['emoji'], // Include emoji in saved ingredient
+        'emoji': item['emoji'],
+        // It's good that individual item macros are already here if available from CaloriesCalculatorPage
+        'protein': item['protein'],
+        'carbs': item['carbs'],
+        'fat': item['fat'],
       }).toList(),
       'dateTime': DateTime.now().toIso8601String(),
     };
@@ -78,6 +103,7 @@ class _MealSummaryPageState extends State<MealSummaryPage> {
       final itemJson = jsonEncode(item);
       if (!recentFoodItemsStrings.contains(itemJson)) {
         recentFoodItemsStrings.insert(0, itemJson);
+        // Keep only the 20 most recent items
         if (recentFoodItemsStrings.length > 20) {
           recentFoodItemsStrings = recentFoodItemsStrings.sublist(0, 20);
         }
@@ -89,6 +115,7 @@ class _MealSummaryPageState extends State<MealSummaryPage> {
       SnackBar(content: Text('${widget.mealType} meal saved to history!')),
     );
 
+    // Return true to CaloriesCalculatorPage to indicate successful saving and clear selected items.
     Navigator.pop(context, true);
   }
 
@@ -126,6 +153,18 @@ class _MealSummaryPageState extends State<MealSummaryPage> {
               ],
             ),
           ),
+          // Display total macros
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildMacroText('Protein', _getMealTotalProtein()),
+                _buildMacroText('Carbs', _getMealTotalCarbs()),
+                _buildMacroText('Fat', _getMealTotalFat()),
+              ],
+            ),
+          ),
           Expanded(
             child: _currentMealItems.isEmpty
                 ? const Center(
@@ -139,12 +178,14 @@ class _MealSummaryPageState extends State<MealSummaryPage> {
                     itemCount: _currentMealItems.length,
                     itemBuilder: (context, index) {
                       final item = _currentMealItems[index];
-                      final dateTime = item['dateTime'] != null
-                          ? DateTime.tryParse(item['dateTime'])?.toLocal()
-                          : null;
-                      final formattedTime = dateTime != null
-                          ? DateFormat('HH:mm').format(dateTime)
-                          : 'No time';
+                      // dateTime from item is not explicitly used in ListTile subtitle currently,
+                      // but it's good that it's available in the item map.
+                      // The formattedTime logic was slightly incorrect as it tried to parse
+                      // a dateTime from the individual food item in _currentMealItems.
+                      // Food items from CaloriesCalculatorPage do not have 'dateTime' in their object.
+                      // The 'dateTime' is for the *overall meal entry*.
+                      // I've removed the `formattedTime` display from individual items as it's not applicable here.
+
                       final itemEmoji = item['emoji'] ?? '🍔'; // Get emoji from item, default to burger
 
                       return Card(
@@ -152,16 +193,18 @@ class _MealSummaryPageState extends State<MealSummaryPage> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         elevation: 2,
                         child: ListTile(
-                          leading: CircleAvatar( // Use CircleAvatar for emoji
-                            backgroundColor: Colors.orange.shade100, // Light background for emoji
-                            child: Text(itemEmoji, style: const TextStyle(fontSize: 24)), // Display item's emoji
+                          leading: CircleAvatar(
+                            backgroundColor: Colors.orange.shade100,
+                            child: Text(itemEmoji, style: const TextStyle(fontSize: 24)),
                           ),
                           title: Text(item['name'], style: const TextStyle(fontWeight: FontWeight.bold)),
                           subtitle: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text('${item['calories']} kcal, ${item['serving']} ${item['unit']}'),
-                              Text('Added at: $formattedTime', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                              Text('P: ${item['protein'] ?? 0}g, C: ${item['carbs'] ?? 0}g, F: ${item['fat'] ?? 0}g',
+                                style: const TextStyle(fontSize: 14, color: Colors.grey),
+                              ),
                             ],
                           ),
                           trailing: IconButton(
@@ -201,6 +244,15 @@ class _MealSummaryPageState extends State<MealSummaryPage> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildMacroText(String label, int value) {
+    return Column(
+      children: [
+        Text('$label:', style: const TextStyle(fontWeight: FontWeight.bold)),
+        Text('${value}g'),
+      ],
     );
   }
 }

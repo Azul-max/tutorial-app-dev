@@ -6,10 +6,15 @@ import 'CreateFoodPage.dart';
 import 'MealSummaryPage.dart';
 
 class CaloriesCalculatorPage extends StatefulWidget {
-  const CaloriesCalculatorPage({super.key});
+  final String? initialFoodName; // Make it nullable
+
+  const CaloriesCalculatorPage({
+    super.key,
+    this.initialFoodName, // Make it optional
+  });
 
   @override
-  _CaloriesCalculatorPageState createState() => _CaloriesCalculatorPageState();
+  State<CaloriesCalculatorPage> createState() => _CaloriesCalculatorPageState();
 }
 
 class _CaloriesCalculatorPageState extends State<CaloriesCalculatorPage> {

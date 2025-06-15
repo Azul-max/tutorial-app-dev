@@ -2,12 +2,12 @@
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert'; // Needed for jsonDecode
+import 'dart:convert';
 
 // Import other pages for navigation
 import 'ProfilePage.dart';
 import 'HistoryPage.dart';
-import 'CaloriesCalculatorPage.dart';
+import 'CaloriesCalculatorPage.dart'; // This is your "Create Food" page
 import 'ExercisePage.dart';
 import 'RecipeSuggestionPage.dart';
 
@@ -28,48 +28,45 @@ class MainMenuPage extends StatefulWidget {
 class _MainMenuPageState extends State<MainMenuPage> with WidgetsBindingObserver {
   String _currentUsername = 'Guest';
   String _currentUserEmail = '';
-  double _targetCalories = 2000; // Default or loaded from profile
-  int _caloriesConsumedToday = 0; // This would typically come from History/Meals
-  int _caloriesBurnedToday = 0; // New: Calories burned from exercises
+  double _targetCalories = 2000;
+  int _caloriesConsumedToday = 0;
+  int _caloriesBurnedToday = 0;
 
-  // Placeholder values for Carbs, Protein, Fat for UI demonstration
-  // These would ideally come from actual calculated daily macros from your food entries
   int _carbsToday = 0;
   int _proteinToday = 0;
   int _fatToday = 0;
 
-  // Placeholder total targets for macros (you might store these in user profile)
-  int _totalCarbsTarget = 250; // Example target in grams
-  int _totalProteinTarget = 150; // Example target in grams
-  int _totalFatTarget = 70; // Example target in grams
+  int _totalCarbsTarget = 250;
+  int _totalProteinTarget = 150;
+  int _totalFatTarget = 70;
 
+  // Controller for the new quick food input field
+  final TextEditingController _quickFoodNameController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this); // Listen for lifecycle changes
+    WidgetsBinding.instance.addObserver(this);
     _currentUsername = widget.username;
     _currentUserEmail = widget.email;
     _loadUserData();
-    _loadCaloriesBurned(); // Load calories burned on init
-    _loadCaloriesConsumed(); // Load consumed calories
-    // _calculateMacrosForDisplay(); // This will be called after _loadCaloriesConsumed
+    _loadCaloriesBurned();
+    _loadCaloriesConsumed();
   }
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this); // Remove observer
+    _quickFoodNameController.dispose(); // Dispose the controller
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    // Reload data when the app comes back to the foreground
     if (state == AppLifecycleState.resumed) {
       _loadCaloriesBurned();
       _loadCaloriesConsumed();
-      _loadUserData(); // Also reload user data, in case profile target calories changed
-      // _calculateMacrosForDisplay(); // This will be called after _loadCaloriesConsumed
+      _loadUserData();
     }
   }
 
@@ -83,10 +80,6 @@ class _MainMenuPageState extends State<MainMenuPage> with WidgetsBindingObserver
         setState(() {
           _currentUserEmail = user['email'] ?? '';
           _targetCalories = double.tryParse(user['targetCalories'] ?? '2000') ?? 2000;
-          // You might also load macro targets here if stored in user data
-          // _totalCarbsTarget = int.tryParse(user['targetCarbs'] ?? '250') ?? 250;
-          // _totalProteinTarget = int.tryParse(user['targetProtein'] ?? '150') ?? 150;
-          // _totalFatTarget = int.tryParse(user['targetFat'] ?? '70') ?? 70;
         });
       }
     }
@@ -107,16 +100,17 @@ class _MainMenuPageState extends State<MainMenuPage> with WidgetsBindingObserver
         final Map<String, dynamic> mealEntry = jsonDecode(mealEntryJson);
         final entryDate = DateTime.parse(mealEntry['dateTime']);
 
-        // Check if it's a food entry and from today
-        if (mealEntry['type'] == 'Food' &&
+        // Check if the entry is for today and is either 'Food' OR 'Meal'
+        if ((mealEntry['type'] == 'Food' || mealEntry['type'] == 'Meal') && // MODIFIED: Added || mealEntry['type'] == 'Meal'
             entryDate.year == today.year &&
             entryDate.month == today.month &&
             entryDate.day == today.day) {
           totalConsumed += (mealEntry['cal'] as int? ?? 0);
-          // Assuming your mealEntry also stores macros as double
-          totalCarbs += (mealEntry['carbohydrates'] as num? ?? 0).round();
-          totalProtein += (mealEntry['protein'] as num? ?? 0).round();
-          totalFat += (mealEntry['fat'] as num? ?? 0).round();
+
+          // MODIFIED: Corrected macro keys to match MealSummaryPage's saving format
+          totalCarbs += (mealEntry['carbs'] as int? ?? 0); // Changed from 'carbohydrates' to 'carbs'
+          totalProtein += (mealEntry['protein'] as int? ?? 0);
+          totalFat += (mealEntry['fat'] as int? ?? 0);
         }
       } catch (e) {
         print('Error parsing meal entry: $e');
@@ -124,7 +118,7 @@ class _MainMenuPageState extends State<MainMenuPage> with WidgetsBindingObserver
     }
     setState(() {
       _caloriesConsumedToday = totalConsumed;
-      _carbsToday = totalCarbs; // Use actual loaded data
+      _carbsToday = totalCarbs;
       _proteinToday = totalProtein;
       _fatToday = totalFat;
     });
@@ -132,7 +126,7 @@ class _MainMenuPageState extends State<MainMenuPage> with WidgetsBindingObserver
 
   Future<void> _loadCaloriesBurned() async {
     final prefs = await SharedPreferences.getInstance();
-    final List<String> mealsJson = prefs.getStringList('meals') ?? []; // 'meals' key used by ExercisePage
+    final List<String> mealsJson = prefs.getStringList('meals') ?? [];
     int totalBurned = 0;
     final today = DateTime.now();
 
@@ -141,7 +135,6 @@ class _MainMenuPageState extends State<MainMenuPage> with WidgetsBindingObserver
         final Map<String, dynamic> entry = jsonDecode(entryJson);
         final entryDate = DateTime.parse(entry['dateTime']);
 
-        // Check if the entry is an 'Exercise' and from today
         if (entry['type'] == 'Exercise' &&
             entryDate.year == today.year &&
             entryDate.month == today.month &&
@@ -159,25 +152,15 @@ class _MainMenuPageState extends State<MainMenuPage> with WidgetsBindingObserver
 
   @override
   Widget build(BuildContext context) {
-    // Calculate net calories (assuming target - consumed + burned)
     int netCalories = (_targetCalories - _caloriesConsumedToday + _caloriesBurnedToday).round();
-    // Ensure calories remaining doesn't go negative for display purposes
     int caloriesLeftDisplay = netCalories > 0 ? netCalories : 0;
-    // Calculate the percentage for the progress indicator based on consumed vs. target
     double progressConsumed = _targetCalories == 0 ? 0 : _caloriesConsumedToday / _targetCalories;
     if (progressConsumed < 0) progressConsumed = 0;
     if (progressConsumed > 1) progressConsumed = 1;
 
-    // Calculate the percentage for the progress indicator based on burned vs. target (just for visual filling)
-    // This isn't a direct "progress" but indicates activity.
-    double progressBurned = _targetCalories == 0 ? 0 : _caloriesBurnedToday / _targetCalories;
-    if (progressBurned < 0) progressBurned = 0;
-    if (progressBurned > 1) progressBurned = 1;
-
-
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor, // Use background color for app bar
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -199,7 +182,7 @@ class _MainMenuPageState extends State<MainMenuPage> with WidgetsBindingObserver
         ),
         actions: [
           IconButton(
-            icon: Icon(Icons.account_circle, color: Theme.of(context).primaryColor), // Use primary color for icon
+            icon: Icon(Icons.account_circle, color: Theme.of(context).primaryColor),
             onPressed: () {
               Navigator.push(
                 context,
@@ -210,9 +193,9 @@ class _MainMenuPageState extends State<MainMenuPage> with WidgetsBindingObserver
                   ),
                 ),
               ).then((_) {
-                _loadUserData(); // Reload user data (including target calories)
-                _loadCaloriesConsumed(); // In case profile affects meal tracking
-                _loadCaloriesBurned(); // In case profile affects exercise tracking
+                _loadUserData();
+                _loadCaloriesConsumed();
+                _loadCaloriesBurned();
               });
             },
           ),
@@ -223,9 +206,9 @@ class _MainMenuPageState extends State<MainMenuPage> with WidgetsBindingObserver
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Daily Calorie Summary Card (Mimicking the NEW image)
+            // Daily Calorie Summary Card
             Card(
-              elevation: 6, // Increased elevation for a more prominent look
+              elevation: 6,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
               margin: const EdgeInsets.only(bottom: 20),
               child: Padding(
@@ -239,7 +222,7 @@ class _MainMenuPageState extends State<MainMenuPage> with WidgetsBindingObserver
                           'Daily Calorie Goal',
                           style: Theme.of(context).textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.bold,
-                            color: Colors.grey[850], // Darker text
+                            color: Colors.grey[850],
                           ),
                         ),
                         Text(
@@ -252,42 +235,39 @@ class _MainMenuPageState extends State<MainMenuPage> with WidgetsBindingObserver
                       ],
                     ),
                     const SizedBox(height: 15),
-                    SizedBox( // Fixed height for this section to control vertical spacing
-                      height: 180, // Adjust height as needed to fit content
+                    SizedBox(
+                      height: 180,
                       child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly, // Distribute evenly
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          // Eaten Column (Left)
                           _buildTopCalorieStat('Eaten', _caloriesConsumedToday, Colors.grey[800]!),
-                          
-                          // Central Calories Remaining with Circular Progress Bar
                           Stack(
                             alignment: Alignment.center,
                             children: [
                               SizedBox(
-                                width: 150, // Smaller circle
+                                width: 150,
                                 height: 150,
                                 child: CircularProgressIndicator(
-                                  value: progressConsumed, // Show progress based on eaten
+                                  value: progressConsumed,
                                   strokeWidth: 10,
-                                  backgroundColor: Theme.of(context).primaryColor.withOpacity(0.2), // Lighter background for the circle
-                                  valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).primaryColor), // Green for the filled part
-                                  strokeCap: StrokeCap.round, // Rounded ends for the progress
+                                  backgroundColor: Theme.of(context).primaryColor.withOpacity(0.2),
+                                  valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).primaryColor),
+                                  strokeCap: StrokeCap.round,
                                 ),
                               ),
                               Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Text(
-                                    '$caloriesLeftDisplay', // Display calculated calories left
-                                    style: Theme.of(context).textTheme.displaySmall?.copyWith( // Adjusted font size
+                                    '$caloriesLeftDisplay',
+                                    style: Theme.of(context).textTheme.displaySmall?.copyWith(
                                       fontWeight: FontWeight.bold,
-                                      color: Theme.of(context).primaryColor, // Green color for the main number
+                                      color: Theme.of(context).primaryColor,
                                     ),
                                   ),
                                   Text(
-                                    'Remaining', // "Remaining" under the number
+                                    'Remaining',
                                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                       color: Colors.grey[700],
                                     ),
@@ -296,29 +276,25 @@ class _MainMenuPageState extends State<MainMenuPage> with WidgetsBindingObserver
                               ),
                             ],
                           ),
-
-                          // Burned Column (Right)
                           _buildTopCalorieStat('Burned', _caloriesBurnedToday, Colors.grey[800]!),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 25), // Increased spacing
-
-                    // Carbs, Protein, Fat section (bottom of the card)
+                    const SizedBox(height: 25),
                     Column(
                       children: [
-                        IntrinsicHeight( // Ensures all children in the row have the same height
+                        IntrinsicHeight(
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceAround,
                             children: [
                               _buildMacroProgressStat(
-                                  'Carbs', _carbsToday, _totalCarbsTarget, Colors.blue.shade400),
+                                  'Carbs', _carbsToday, _totalCarbsTarget, Theme.of(context).colorScheme.secondary),
                               VerticalDivider(color: Colors.grey.shade300, thickness: 1, indent: 5, endIndent: 5),
                               _buildMacroProgressStat(
-                                  'Protein', _proteinToday, _totalProteinTarget, Colors.blue.shade400),
+                                  'Protein', _proteinToday, _totalProteinTarget, Theme.of(context).colorScheme.secondary),
                               VerticalDivider(color: Colors.grey.shade300, thickness: 1, indent: 5, endIndent: 5),
                               _buildMacroProgressStat(
-                                  'Fat', _fatToday, _totalFatTarget, Colors.blue.shade400),
+                                  'Fat', _fatToday, _totalFatTarget, Theme.of(context).colorScheme.secondary),
                             ],
                           ),
                         ),
@@ -329,7 +305,66 @@ class _MainMenuPageState extends State<MainMenuPage> with WidgetsBindingObserver
               ),
             ),
 
-            // Main Action Buttons (no changes in this section from previous step)
+            // NEW: Quick Food Input Section
+            Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+              margin: const EdgeInsets.only(bottom: 20),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Quick Log Food',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey[850],
+                      ),
+                    ),
+                    const SizedBox(height: 15),
+                    TextField(
+                      controller: _quickFoodNameController,
+                      decoration: InputDecoration(
+                        labelText: 'Enter food name (e.g., Apple, Banana)',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      ),
+                      textInputAction: TextInputAction.done,
+                      onSubmitted: (value) {
+                        _navigateToCaloriesCalculator(value);
+                      },
+                    ),
+                    const SizedBox(height: 15),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          _navigateToCaloriesCalculator(_quickFoodNameController.text);
+                        },
+                        icon: const Icon(Icons.add_circle_outline),
+                        label: const Text('Go to Log Meal'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Theme.of(context).primaryColor,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          textStyle: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // Main Action Buttons
             _buildActionCard(
               context,
               Icons.restaurant_menu,
@@ -391,8 +426,8 @@ class _MainMenuPageState extends State<MainMenuPage> with WidgetsBindingObserver
             ),
             const SizedBox(height: 20),
 
-            // Daily Calorie Progress (This section will be redundant with the new card design,
-            // but keeping it for now if you still want it. Otherwise, remove this block.)
+            // Daily Calorie Progress (You can choose to keep or remove this section
+            // as the new summary card covers similar info)
             Text(
               'Daily Calorie Progress',
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
@@ -430,21 +465,38 @@ class _MainMenuPageState extends State<MainMenuPage> with WidgetsBindingObserver
     );
   }
 
-  // NEW helper for the top "Eaten" / "Burned" stats
+  // Helper method to navigate and pass data
+  void _navigateToCaloriesCalculator(String initialFoodName) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CaloriesCalculatorPage(
+          initialFoodName: initialFoodName,
+        ),
+      ),
+    );
+    // Clear the quick input field after navigation
+    _quickFoodNameController.clear();
+    // Reload data when returning from CaloriesCalculatorPage
+    _loadCaloriesConsumed();
+    _loadCaloriesBurned();
+  }
+
+  // Helper for the top "Eaten" / "Burned" stats
   Widget _buildTopCalorieStat(String label, int value, Color textColor) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          value.toStringAsFixed(0), // Format to remove decimals
-          style: Theme.of(context).textTheme.displaySmall?.copyWith( // Larger numbers
+          value.toStringAsFixed(0),
+          style: Theme.of(context).textTheme.displaySmall?.copyWith(
             fontWeight: FontWeight.bold,
             color: textColor,
           ),
         ),
         Text(
           label,
-          style: Theme.of(context).textTheme.bodyLarge?.copyWith( // Adjusted label size
+          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
             color: Colors.grey[700],
           ),
         ),
@@ -452,42 +504,45 @@ class _MainMenuPageState extends State<MainMenuPage> with WidgetsBindingObserver
     );
   }
 
-  // NEW helper for Carbs, Protein, Fat with progress bars
+  // Helper for Carbs, Protein, Fat with progress bars
   Widget _buildMacroProgressStat(String label, int current, int total, Color progressColor) {
     double progress = total == 0 ? 0 : current / total;
     if (progress < 0) progress = 0;
     if (progress > 1.0) progress = 1.0;
 
     return Expanded(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            label,
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: Colors.grey[800],
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4.0), // Add padding to separate columns slightly
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              label,
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Colors.grey[800],
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          SizedBox(
-            width: double.infinity, // Take full width of expanded space
-            child: LinearProgressIndicator(
-              value: progress,
-              backgroundColor: Colors.grey.shade300,
-              valueColor: AlwaysStoppedAnimation<Color>(progressColor),
-              minHeight: 8, // Thinner bar
-              borderRadius: BorderRadius.circular(4),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: LinearProgressIndicator(
+                value: progress,
+                backgroundColor: Colors.grey.shade300,
+                valueColor: AlwaysStoppedAnimation<Color>(progressColor),
+                minHeight: 8,
+                borderRadius: BorderRadius.circular(4),
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '$current / $total g',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.grey[700],
+            const SizedBox(height: 8),
+            Text(
+              '$current / $total g',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Colors.grey[700],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -543,7 +598,7 @@ class _MainMenuPageState extends State<MainMenuPage> with WidgetsBindingObserver
     );
   }
 
-  // Existing _buildProgressItem (from Daily Calorie Progress section at the bottom)
+  // Existing _buildProgressItem
   Widget _buildProgressItem(
       BuildContext context, String label, int current, int total, Color color) {
     double progress = total == 0 ? 0 : current / total;
