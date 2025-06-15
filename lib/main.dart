@@ -80,18 +80,18 @@ class _MyAppState extends State<MyApp> {
       // The 'home' property is used to display the initial widget dynamically.
       // It will show a blank screen (_initialPage) until _checkLoginStatus completes.
       home: _initialPage,
-      
+
       // Define a consistent theme for the entire application
       theme: ThemeData(
         // Primary color for your app's main branding and interactive elements
         primaryColor: const Color(0xFF8BC34A), // A vibrant green
         // Accent color, can be used for secondary actions or highlights
         hintColor: const Color(0xFFC8E6C9), // A lighter, softer green
-        
+
         // Define default background colors for Scaffold and Canvas
         scaffoldBackgroundColor: const Color(0xFFE3F1EC), // Light background for most pages
         canvasColor: const Color(0xFFE3F1EC), // Used by Drawer, BottomSheet etc.
-        
+
         // AppBar Theme: consistent look for all AppBars
         appBarTheme: const AppBarTheme(
           backgroundColor: Colors.white, // White app bar background
@@ -151,7 +151,7 @@ class _MyAppState extends State<MyApp> {
             textStyle: const TextStyle(fontWeight: FontWeight.bold), // Bold text
           ),
         ),
-        
+
         // Checkbox Theme: consistent look for Checkbox
         checkboxTheme: CheckboxThemeData(
           fillColor: WidgetStateProperty.resolveWith((states) {
@@ -186,8 +186,8 @@ class _MyAppState extends State<MyApp> {
       routes: {
         // Note: The '/' route is handled by 'home: _initialPage' above.
         // These routes are used when you use Navigator.pushNamed().
-        '/mainMenu': (context) => MainMenuPage(username: 'user'), // Placeholder username, ideally passed from SignIn/SignUp
-        '/profile': (context) => ProfilePage(name: 'User', email: 'user@example.com'), // REMOVED targetCalories
+        '/mainMenu': (context) => MainMenuPage(username: 'user', email: 'user@example.com'), // ADDED email argument
+        '/profile': (context) => ProfilePage(name: 'User', email: 'user@example.com'), // Corrected: Removed targetCalories
         '/history': (context) => const HistoryPage(),
         '/calculator': (context) => const CaloriesCalculatorPage(),
         '/createFood': (context) => const CreateFoodPage(),

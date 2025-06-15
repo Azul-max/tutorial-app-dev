@@ -11,11 +11,11 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  cupertino_icons: ^1.0.8
-  shared_preferences: ^2.2.1
-  image_picker: ^1.1.0
-  http: ^0.13.6
-  intl: ^0.18.1
+  shared_preferences: ^2.2.0 # Used for local data storage in your app
+  http: ^1.1.0 # Only keep this if you have other parts of your app that make web requests
+  cupertino_icons: ^1.0.2 # If you are using Cupertino icons
+  intl: ^0.20.2
+  table_calendar: ^3.0.9
 
 dev_dependencies:
   flutter_test:
