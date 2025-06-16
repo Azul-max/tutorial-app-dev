@@ -40,8 +40,7 @@ class _MainMenuPageState extends State<MainMenuPage> with WidgetsBindingObserver
   int _totalProteinTarget = 150;
   int _totalFatTarget = 70;
 
-  // Controller for the new quick food input field
-  final TextEditingController _quickFoodNameController = TextEditingController();
+  // Removed: TextEditingController _quickFoodNameController
 
   @override
   void initState() {
@@ -56,7 +55,7 @@ class _MainMenuPageState extends State<MainMenuPage> with WidgetsBindingObserver
 
   @override
   void dispose() {
-    _quickFoodNameController.dispose(); // Dispose the controller
+    // Removed: _quickFoodNameController.dispose(); // Dispose the controller
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -101,14 +100,14 @@ class _MainMenuPageState extends State<MainMenuPage> with WidgetsBindingObserver
         final entryDate = DateTime.parse(mealEntry['dateTime']);
 
         // Check if the entry is for today and is either 'Food' OR 'Meal'
-        if ((mealEntry['type'] == 'Food' || mealEntry['type'] == 'Meal') && // MODIFIED: Added || mealEntry['type'] == 'Meal'
+        if ((mealEntry['type'] == 'Food' || mealEntry['type'] == 'Meal') &&
             entryDate.year == today.year &&
             entryDate.month == today.month &&
             entryDate.day == today.day) {
           totalConsumed += (mealEntry['cal'] as int? ?? 0);
 
-          // MODIFIED: Corrected macro keys to match MealSummaryPage's saving format
-          totalCarbs += (mealEntry['carbs'] as int? ?? 0); // Changed from 'carbohydrates' to 'carbs'
+          // Corrected macro keys to match MealSummaryPage's saving format
+          totalCarbs += (mealEntry['carbs'] as int? ?? 0);
           totalProtein += (mealEntry['protein'] as int? ?? 0);
           totalFat += (mealEntry['fat'] as int? ?? 0);
         }
@@ -305,64 +304,8 @@ class _MainMenuPageState extends State<MainMenuPage> with WidgetsBindingObserver
               ),
             ),
 
-            // NEW: Quick Food Input Section
-            Card(
-              elevation: 4,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-              margin: const EdgeInsets.only(bottom: 20),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Quick Log Food',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.grey[850],
-                      ),
-                    ),
-                    const SizedBox(height: 15),
-                    TextField(
-                      controller: _quickFoodNameController,
-                      decoration: InputDecoration(
-                        labelText: 'Enter food name (e.g., Apple, Banana)',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      ),
-                      textInputAction: TextInputAction.done,
-                      onSubmitted: (value) {
-                        _navigateToCaloriesCalculator(value);
-                      },
-                    ),
-                    const SizedBox(height: 15),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          _navigateToCaloriesCalculator(_quickFoodNameController.text);
-                        },
-                        icon: const Icon(Icons.add_circle_outline),
-                        label: const Text('Go to Log Meal'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Theme.of(context).primaryColor,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          textStyle: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            // Removed: Quick Food Input Section
+            // Card(...), // This entire Card widget is removed
 
             // Main Action Buttons
             _buildActionCard(
@@ -371,6 +314,7 @@ class _MainMenuPageState extends State<MainMenuPage> with WidgetsBindingObserver
               'Log Meal',
               'Record your food intake',
               () async {
+                // This button will now navigate directly to CaloriesCalculatorPage
                 await Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => const CaloriesCalculatorPage()),
@@ -465,22 +409,7 @@ class _MainMenuPageState extends State<MainMenuPage> with WidgetsBindingObserver
     );
   }
 
-  // Helper method to navigate and pass data
-  void _navigateToCaloriesCalculator(String initialFoodName) async {
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => CaloriesCalculatorPage(
-          initialFoodName: initialFoodName,
-        ),
-      ),
-    );
-    // Clear the quick input field after navigation
-    _quickFoodNameController.clear();
-    // Reload data when returning from CaloriesCalculatorPage
-    _loadCaloriesConsumed();
-    _loadCaloriesBurned();
-  }
+  // Removed: _navigateToCaloriesCalculator method
 
   // Helper for the top "Eaten" / "Burned" stats
   Widget _buildTopCalorieStat(String label, int value, Color textColor) {

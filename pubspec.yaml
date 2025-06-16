@@ -22,6 +22,15 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^5.0.0
 
-# The flutter section is typically at the end
+# The flutter section should only appear ONCE.
 flutter:
   uses-material-design: true
+
+  # Declare your assets here, indented under 'flutter:'
+  # If you want to include all files in the 'assets/' folder:
+  assets:
+    - assets/
+  # Or if you want to be specific:
+  # assets:
+  #   - assets/WhatsApp Image 2025-06-16 at 01.06.36.jpeg
+  #   - assets/logo.png # If you have both, list them or just use assets/

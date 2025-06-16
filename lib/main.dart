@@ -84,9 +84,9 @@ class _MyAppState extends State<MyApp> {
       // Define a consistent theme for the entire application
       theme: ThemeData(
         // Primary color for your app's main branding and interactive elements
-        primaryColor: const Color(0xFF8BC34A), // A vibrant green
+        primaryColor: const Color.fromARGB(255, 195, 74, 74), // A vibrant red
         // Accent color, can be used for secondary actions or highlights
-        hintColor: const Color(0xFFC8E6C9), // A lighter, softer green
+        hintColor: const Color.fromARGB(255, 230, 200, 200), // A lighter, softer red
 
         // Define default background colors for Scaffold and Canvas
         scaffoldBackgroundColor: const Color(0xFFE3F1EC), // Light background for most pages
@@ -133,7 +133,7 @@ class _MyAppState extends State<MyApp> {
         // ElevatedButton Theme: consistent look for all ElevatedButtons
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF8BC34A), // Green background for main buttons
+            backgroundColor: const Color.fromARGB(255, 195, 74, 74), // Green background for main buttons
             foregroundColor: Colors.white, // White text/icon color
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12), // Rounded corners
@@ -147,7 +147,7 @@ class _MyAppState extends State<MyApp> {
         // TextButton Theme: consistent look for all TextButtons (like "Sign Up", "Forgot Password")
         textButtonTheme: TextButtonThemeData(
           style: TextButton.styleFrom(
-            foregroundColor: const Color(0xFF8BC34A), // Green color for text links
+            foregroundColor: const Color.fromARGB(255, 195, 74, 74), // Green color for text links
             textStyle: const TextStyle(fontWeight: FontWeight.bold), // Bold text
           ),
         ),
@@ -156,7 +156,7 @@ class _MyAppState extends State<MyApp> {
         checkboxTheme: CheckboxThemeData(
           fillColor: WidgetStateProperty.resolveWith((states) {
             if (states.contains(WidgetState.selected)) {
-              return const Color(0xFF8BC34A); // Green when checked
+              return const Color.fromARGB(255, 195, 74, 74); // Green when checked
             }
             return Colors.grey; // Grey when unchecked
           }),
@@ -173,13 +173,13 @@ class _MyAppState extends State<MyApp> {
           titleLarge: TextStyle(fontSize: 20, fontWeight: FontWeight.w500, color: Colors.black87), // AppBar titles, section headers
           bodyLarge: TextStyle(fontSize: 16, fontWeight: FontWeight.w400, color: Colors.black87), // General body text
           bodyMedium: TextStyle(fontSize: 14, fontWeight: FontWeight.w400, color: Colors.black87), // Smaller body text, list item subtitles
-          labelLarge: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.white), // For button text (overridden by ElevatedButtonTheme)
+          labelLarge: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Color.fromARGB(255, 148, 145, 145)), // For button text (overridden by ElevatedButtonTheme)
           bodySmall: TextStyle(fontSize: 12, fontWeight: FontWeight.w400, color: Colors.black54), // Hint text, small details
           labelSmall: TextStyle(fontSize: 10, fontWeight: FontWeight.w400, color: Colors.black54), // Very small text
         ),
 
-        colorScheme: ColorScheme.fromSwatch(primarySwatch: Colors.green)
-            .copyWith(secondary: const Color(0xFFC8E6C9)), // Define secondary color
+        colorScheme: ColorScheme.fromSwatch(primarySwatch: Colors.red)
+            .copyWith(secondary: const Color.fromARGB(255, 230, 200, 200)), // Define secondary color
       ),
 
       // Define your application routes (for navigation between pages)

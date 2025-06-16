@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
-import 'package:intl/intl.dart';
 
 class MealSummaryPage extends StatefulWidget {
   final List<Map<String, dynamic>> mealItems;
