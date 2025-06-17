@@ -336,15 +336,15 @@ class _ExercisePageState extends State<ExercisePage> {
   Widget _buildExerciseCard(Map<String, dynamic> exercise) {
     final exerciseImages = {
       'Running': 'assets/running.jpg',
-      'Cycling': 'assets/cycling.jpg',
+      'Cycling': 'assets/cycling.jpeg',
       'Swimming': 'assets/swimming.jpg',
       'Walking': 'assets/walking.jpg',
       'Yoga': 'assets/yoga.jpg',
-      'Weight Training': 'assets/weight_training.jpg',
+      'Weight Training': 'assets/weight training.jpg',
       'HIIT': 'assets/hiit.jpg',
       'Pilates': 'assets/pilates.jpg',
       'Dancing': 'assets/dancing.jpg',
-      'Jump Rope': 'assets/jump_rope.jpg',
+      'Jump Rope': 'assets/jump rope.jpg',
     };
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
