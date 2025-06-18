@@ -6,11 +6,11 @@ import 'CreateFoodPage.dart';
 import 'MealSummaryPage.dart';
 
 class CaloriesCalculatorPage extends StatefulWidget {
-  final String? initialFoodName; // Make it nullable
+  final String? initialFoodName;
 
   const CaloriesCalculatorPage({
     super.key,
-    this.initialFoodName, // Make it optional
+    this.initialFoodName,
   });
 
   @override
@@ -38,7 +38,6 @@ class _CaloriesCalculatorPageState extends State<CaloriesCalculatorPage> {
   bool _filterHighFat = false;
   String? _sortBy;
 
-
   @override
   void initState() {
     super.initState();
@@ -63,10 +62,9 @@ class _CaloriesCalculatorPageState extends State<CaloriesCalculatorPage> {
     final List<String>? storedFavoriteItems = prefs.getStringList('favoriteFoodItems');
 
     setState(() {
-      // Ensure 'emoji' is parsed if it exists, otherwise default to '🍔'
       _personalFoodItems = storedPersonalItems?.map((item) {
         final Map<String, dynamic> decodedItem = jsonDecode(item) as Map<String, dynamic>;
-        decodedItem['emoji'] ??= '🍔'; // Default emoji if not present
+        decodedItem['emoji'] ??= '🍔';
         return decodedItem;
       }).toList() ?? [];
 
@@ -180,7 +178,6 @@ class _CaloriesCalculatorPageState extends State<CaloriesCalculatorPage> {
     });
     await prefs.setStringList('favoriteFoodItems', favoriteItemsStrings);
   }
-
 
   void _deletePersonalFoodItem(Map<String, dynamic> itemToDelete) async {
     showDialog(
@@ -347,7 +344,7 @@ class _CaloriesCalculatorPageState extends State<CaloriesCalculatorPage> {
                       width: double.infinity,
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF8BC34A),
+                          backgroundColor: const Color.fromARGB(255, 195, 74, 74),
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                           padding: const EdgeInsets.symmetric(vertical: 12),
@@ -378,13 +375,12 @@ class _CaloriesCalculatorPageState extends State<CaloriesCalculatorPage> {
     );
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFE3F1EC),
+      backgroundColor: const Color.fromARGB(255, 241, 227, 227),
       appBar: AppBar(
-        backgroundColor: const Color(0xFFE3F1EC),
+        backgroundColor: const Color.fromARGB(255, 175, 76, 76),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.close, color: Colors.black),
@@ -392,26 +388,15 @@ class _CaloriesCalculatorPageState extends State<CaloriesCalculatorPage> {
             Navigator.pop(context);
           },
         ),
-        title: DropdownButtonHideUnderline(
-          child: DropdownButton<String>(
-            value: _selectedMealType,
-            icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
-            style: const TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.bold),
-            onChanged: (String? newValue) {
-              setState(() {
-                _selectedMealType = newValue!;
-              });
-            },
-            items: _mealTypes.map<DropdownMenuItem<String>>((String value) {
-              return DropdownMenuItem<String>(
-                value: value,
-                child: Text(value),
-              );
-            }).toList(),
+        title: const Text(
+          'Calories Calculator',
+          style: TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
           ),
         ),
         centerTitle: true,
-        actions: const [], // Removed favorite and delete icons from AppBar
       ),
       body: Column(
         children: [
@@ -419,6 +404,34 @@ class _CaloriesCalculatorPageState extends State<CaloriesCalculatorPage> {
             padding: const EdgeInsets.all(16.0),
             child: Column(
               children: [
+                // Meal Type Dropdown (moved here)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text(
+                      'Meal Type: ',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                    DropdownButton<String>(
+                      value: _selectedMealType,
+                      icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
+                      style: const TextStyle(color: Colors.black, fontSize: 16),
+                      onChanged: (String? newValue) {
+                        setState(() {
+                          _selectedMealType = newValue!;
+                        });
+                      },
+                      items: _mealTypes.map<DropdownMenuItem<String>>((String value) {
+                        return DropdownMenuItem<String>(
+                          value: value,
+                          child: Text(value),
+                        );
+                      }).toList(),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
                 // Search Bar
                 Container(
                   decoration: BoxDecoration(
@@ -461,7 +474,7 @@ class _CaloriesCalculatorPageState extends State<CaloriesCalculatorPage> {
                         ),
                         onPressed: () {
                           Navigator.pushNamed(context, CreateFoodPage.routeName).then((_) {
-                            _loadAllFoodItems(); // Reload all items after creating a new one
+                            _loadAllFoodItems();
                           });
                         },
                         icon: const Icon(Icons.add_circle_outline),
@@ -520,7 +533,7 @@ class _CaloriesCalculatorPageState extends State<CaloriesCalculatorPage> {
             Container(
               padding: const EdgeInsets.all(16.0),
               decoration: const BoxDecoration(
-                color: Color(0xFFE3F1EC),
+                color: Color.fromARGB(255, 241, 227, 227),
                 border: Border(top: BorderSide(color: Colors.grey, width: 0.5)),
               ),
               child: SafeArea(
@@ -535,7 +548,7 @@ class _CaloriesCalculatorPageState extends State<CaloriesCalculatorPage> {
                       flex: 2,
                       child: ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF8BC34A),
+                          backgroundColor: const Color.fromARGB(255, 195, 74, 74),
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                           padding: const EdgeInsets.symmetric(vertical: 12),
@@ -584,7 +597,7 @@ class _CaloriesCalculatorPageState extends State<CaloriesCalculatorPage> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF8BC34A) : Colors.white,
+          color: isSelected ? const Color.fromARGB(255, 195, 74, 74) : Colors.white,
           borderRadius: BorderRadius.circular(8),
         ),
         child: Text(
@@ -599,38 +612,28 @@ class _CaloriesCalculatorPageState extends State<CaloriesCalculatorPage> {
   }
 
   /// Helper widget to build a card for each food item in the list.
-  /// Includes swipe-to-delete functionality for 'Personal' items.
-  /// Also takes `isSelected` to show a checkmark and `isFavorite` to show a heart icon.
   Widget _buildFoodItemCard(Map<String, dynamic> foodItem, bool isSelected, bool isFavorite) {
     final bool canDismiss = _currentTab == 'Personal';
-    final String emoji = foodItem['emoji'] ?? '🍔'; // Get emoji from item, default to burger
+    final String emoji = foodItem['emoji'] ?? '🍔';
 
     Widget leadingWidget;
     if (isSelected) {
       leadingWidget = Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: const Color(0xFF8BC34A), // Solid green when selected
+          color: const Color.fromARGB(255, 195, 74, 74),
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Text(emoji, style: const TextStyle(fontSize: 24)), // Display emoji
+        child: Text(emoji, style: const TextStyle(fontSize: 24)),
       );
-      // You could also overlay a checkmark if you want to be explicit about selection
-      // child: Stack(
-      //   alignment: Alignment.center,
-      //   children: [
-      //     Text(emoji, style: const TextStyle(fontSize: 24)),
-      //     const Icon(Icons.check, color: Colors.white, size: 20),
-      //   ],
-      // ),
     } else {
       leadingWidget = Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: const Color(0xFF8BC34A).withOpacity(0.2), // Light green when unselected
+          color: const Color.fromARGB(255, 195, 74, 74).withOpacity(0.2),
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Text(emoji, style: const TextStyle(fontSize: 24)), // Display emoji
+        child: Text(emoji, style: const TextStyle(fontSize: 24)),
       );
     }
 
@@ -641,7 +644,6 @@ class _CaloriesCalculatorPageState extends State<CaloriesCalculatorPage> {
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Favorite Button
           IconButton(
             icon: Icon(
               isFavorite ? Icons.favorite : Icons.favorite_border,
