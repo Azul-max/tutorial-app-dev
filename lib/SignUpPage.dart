@@ -2,10 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 
-// Assuming MainMenuPage and SignInPage exist in your project structure
-import 'MainMenuPage.dart';
-// import 'SignInPage.dart'; // No longer needed as direct import
-
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
 
