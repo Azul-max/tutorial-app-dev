@@ -1,15 +1,13 @@
-// lib/MainMenuPage.dart
-
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 
 // Import other pages for navigation
 import 'ProfilePage.dart';
-import 'HistoryPage.dart';
-import 'CaloriesCalculatorPage.dart'; // This is your "Create Food" page
-import 'ExercisePage.dart';
-import 'RecipeSuggestionPage.dart';
+import '../Module/HistoryPage.dart';
+import '../Module/Calories/CaloriesCalculatorPage.dart';
+import '../Module/Exercise/ExercisePage.dart';
+import '../Module/RecipeSuggestionPage.dart';
 
 class MainMenuPage extends StatefulWidget {
   final String username;
@@ -36,11 +34,9 @@ class _MainMenuPageState extends State<MainMenuPage> with WidgetsBindingObserver
   int _proteinToday = 0;
   int _fatToday = 0;
 
-  int _totalCarbsTarget = 250;
-  int _totalProteinTarget = 150;
-  int _totalFatTarget = 70;
-
-  // Removed: TextEditingController _quickFoodNameController
+  final int _totalCarbsTarget = 250;
+  final int _totalProteinTarget = 150;
+  final int _totalFatTarget = 70;
 
   @override
   void initState() {
@@ -55,7 +51,6 @@ class _MainMenuPageState extends State<MainMenuPage> with WidgetsBindingObserver
 
   @override
   void dispose() {
-    // Removed: _quickFoodNameController.dispose(); // Dispose the controller
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -71,15 +66,25 @@ class _MainMenuPageState extends State<MainMenuPage> with WidgetsBindingObserver
 
   Future<void> _loadUserData() async {
     final prefs = await SharedPreferences.getInstance();
-    final String? storedUserJson = prefs.getString('registered_users');
-    if (storedUserJson != null) {
-      final Map<String, dynamic> decodedUsers = jsonDecode(storedUserJson);
-      if (decodedUsers.containsKey(_currentUsername)) {
-        final user = decodedUsers[_currentUsername];
-        setState(() {
-          _currentUserEmail = user['email'] ?? '';
-          _targetCalories = double.tryParse(user['targetCalories'] ?? '2000') ?? 2000;
-        });
+    final String? userGoalsJson = prefs.getString('userGoals');
+    if (userGoalsJson != null) {
+      final Map<String, dynamic> goals = jsonDecode(userGoalsJson);
+      setState(() {
+        _targetCalories = (goals['targetCalories'] is int)
+            ? goals['targetCalories'].toDouble()
+            : double.tryParse(goals['targetCalories']?.toString() ?? '') ?? 2000;
+      });
+    } else {
+      final String? storedUserJson = prefs.getString('registered_users');
+      if (storedUserJson != null) {
+        final Map<String, dynamic> decodedUsers = jsonDecode(storedUserJson);
+        // Use lowercase for username key for consistency
+        if (decodedUsers.containsKey(_currentUsername.toLowerCase())) {
+          final user = decodedUsers[_currentUsername.toLowerCase()];
+          setState(() {
+            _targetCalories = double.tryParse(user['targetCalories']?.toString() ?? '2000') ?? 2000;
+          });
+        }
       }
     }
   }
@@ -99,14 +104,11 @@ class _MainMenuPageState extends State<MainMenuPage> with WidgetsBindingObserver
         final Map<String, dynamic> mealEntry = jsonDecode(mealEntryJson);
         final entryDate = DateTime.parse(mealEntry['dateTime']);
 
-        // Check if the entry is for today and is either 'Food' OR 'Meal'
         if ((mealEntry['type'] == 'Food' || mealEntry['type'] == 'Meal') &&
             entryDate.year == today.year &&
             entryDate.month == today.month &&
             entryDate.day == today.day) {
           totalConsumed += (mealEntry['cal'] as int? ?? 0);
-
-          // Corrected macro keys to match MealSummaryPage's saving format
           totalCarbs += (mealEntry['carbs'] as int? ?? 0);
           totalProtein += (mealEntry['protein'] as int? ?? 0);
           totalFat += (mealEntry['fat'] as int? ?? 0);
@@ -125,17 +127,15 @@ class _MainMenuPageState extends State<MainMenuPage> with WidgetsBindingObserver
 
   Future<void> _loadCaloriesBurned() async {
     final prefs = await SharedPreferences.getInstance();
-    final List<String> mealsJson = prefs.getStringList('meals') ?? [];
+    final List<String> exercisesJson = prefs.getStringList('exercises') ?? [];
     int totalBurned = 0;
     final today = DateTime.now();
 
-    for (String entryJson in mealsJson) {
+    for (String entryJson in exercisesJson) {
       try {
         final Map<String, dynamic> entry = jsonDecode(entryJson);
         final entryDate = DateTime.parse(entry['dateTime']);
-
-        if (entry['type'] == 'Exercise' &&
-            entryDate.year == today.year &&
+        if (entryDate.year == today.year &&
             entryDate.month == today.month &&
             entryDate.day == today.day) {
           totalBurned += (entry['cal'] as int? ?? 0);
@@ -159,7 +159,7 @@ class _MainMenuPageState extends State<MainMenuPage> with WidgetsBindingObserver
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        backgroundColor: const Color.fromARGB(255, 175, 76, 76),
         elevation: 0,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -167,13 +167,13 @@ class _MainMenuPageState extends State<MainMenuPage> with WidgetsBindingObserver
             Text(
               'Welcome,',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.grey[600],
+                color: const Color.fromARGB(255, 16, 16, 16),
               ),
             ),
             Text(
               _currentUsername,
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                color: Theme.of(context).primaryColor,
+                color: const Color.fromARGB(255, 32, 31, 31),
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -181,7 +181,7 @@ class _MainMenuPageState extends State<MainMenuPage> with WidgetsBindingObserver
         ),
         actions: [
           IconButton(
-            icon: Icon(Icons.account_circle, color: Theme.of(context).primaryColor),
+            icon: Icon(Icons.account_circle, color: const Color.fromARGB(255, 71, 70, 70)),
             onPressed: () {
               Navigator.push(
                 context,
@@ -304,9 +304,6 @@ class _MainMenuPageState extends State<MainMenuPage> with WidgetsBindingObserver
               ),
             ),
 
-            // Removed: Quick Food Input Section
-            // Card(...), // This entire Card widget is removed
-
             // Main Action Buttons
             _buildActionCard(
               context,
@@ -314,7 +311,6 @@ class _MainMenuPageState extends State<MainMenuPage> with WidgetsBindingObserver
               'Log Meal',
               'Record your food intake',
               () async {
-                // This button will now navigate directly to CaloriesCalculatorPage
                 await Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => const CaloriesCalculatorPage()),
@@ -330,12 +326,14 @@ class _MainMenuPageState extends State<MainMenuPage> with WidgetsBindingObserver
               'Log Exercise',
               'Track your burned calories',
               () async {
-                await Navigator.push(
+                final bool? result = await Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => const ExercisePage()),
                 );
-                _loadCaloriesBurned();
-                _loadCaloriesConsumed();
+                if (result == true) {
+                  _loadCaloriesBurned();
+                  _loadCaloriesConsumed();
+                }
               },
             ),
             const SizedBox(height: 12),
@@ -370,8 +368,6 @@ class _MainMenuPageState extends State<MainMenuPage> with WidgetsBindingObserver
             ),
             const SizedBox(height: 20),
 
-            // Daily Calorie Progress (You can choose to keep or remove this section
-            // as the new summary card covers similar info)
             Text(
               'Daily Calorie Progress',
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
@@ -409,9 +405,6 @@ class _MainMenuPageState extends State<MainMenuPage> with WidgetsBindingObserver
     );
   }
 
-  // Removed: _navigateToCaloriesCalculator method
-
-  // Helper for the top "Eaten" / "Burned" stats
   Widget _buildTopCalorieStat(String label, int value, Color textColor) {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -433,7 +426,6 @@ class _MainMenuPageState extends State<MainMenuPage> with WidgetsBindingObserver
     );
   }
 
-  // Helper for Carbs, Protein, Fat with progress bars
   Widget _buildMacroProgressStat(String label, int current, int total, Color progressColor) {
     double progress = total == 0 ? 0 : current / total;
     if (progress < 0) progress = 0;
@@ -441,7 +433,7 @@ class _MainMenuPageState extends State<MainMenuPage> with WidgetsBindingObserver
 
     return Expanded(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 4.0), // Add padding to separate columns slightly
+        padding: const EdgeInsets.symmetric(horizontal: 4.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -476,7 +468,6 @@ class _MainMenuPageState extends State<MainMenuPage> with WidgetsBindingObserver
     );
   }
 
-  // Existing _buildActionCard
   Widget _buildActionCard(
       BuildContext context, IconData icon, String title, String subtitle, VoidCallback onPressed) {
     return Card(
@@ -527,7 +518,6 @@ class _MainMenuPageState extends State<MainMenuPage> with WidgetsBindingObserver
     );
   }
 
-  // Existing _buildProgressItem
   Widget _buildProgressItem(
       BuildContext context, String label, int current, int total, Color color) {
     double progress = total == 0 ? 0 : current / total;
