@@ -4,6 +4,7 @@ import 'dart:convert';
 
 import 'MainMenuPage.dart';
 import 'SignUpPage.dart';
+import 'MyGoalsPage.dart'; // <--- ADD THIS LINE: Import the MyGoalsPage
 
 class SignInPage extends StatefulWidget {
   const SignInPage({super.key});
@@ -68,30 +69,51 @@ class _SignInPageState extends State<SignInPage> {
       final String password = _passwordController.text;
 
       final users = await _loadUsers();
+      final prefs = await SharedPreferences.getInstance(); // Get SharedPreferences instance here
 
       if (users.containsKey(normalizedUsername) && users[normalizedUsername]?['password'] == password) {
         final String? userEmail = users[normalizedUsername]?['email'];
+        final String originalCaseUsername = users[normalizedUsername]?['username'] ?? inputUsername; // Get original case username
 
+        // Save 'remember me' preference
+        await prefs.setBool('remember_me', _rememberMe);
         if (_rememberMe) {
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setBool('remember_me', true);
           await prefs.setString('last_remembered_username', normalizedUsername);
         } else {
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setBool('remember_me', false);
           await prefs.remove('last_remembered_username');
         }
 
+        // Store current logged-in user session data
+        await prefs.setString('loggedInUser', jsonEncode({
+          'username': originalCaseUsername,
+          'email': userEmail,
+        }));
+
+        // --- NEW LOGIC: Check for existing goals ---
+        final bool goalsSet = prefs.getString('userGoals') != null; // Check if userGoals data exists
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Welcome back, $inputUsername!')),
+            SnackBar(content: Text('Welcome back, $originalCaseUsername!')),
           );
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => MainMenuPage(username: inputUsername, email: userEmail ?? ''),
-            ),
-          );
+
+          if (goalsSet) {
+            // Goals are already set, navigate to MainMenuPage
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => MainMenuPage(username: originalCaseUsername, email: userEmail ?? ''),
+              ),
+            );
+          } else {
+            // Goals are NOT set, navigate to MyGoalsPage
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const MyGoalsPage(),
+              ),
+            );
+          }
         }
       } else {
         if (mounted) {
