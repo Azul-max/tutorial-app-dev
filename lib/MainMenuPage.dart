@@ -4,10 +4,10 @@ import 'dart:convert';
 
 // Import other pages for navigation
 import 'ProfilePage.dart';
-import '../Module/HistoryPage.dart';
-import '../Module/Calories/CaloriesCalculatorPage.dart';
-import '../Module/Exercise/ExercisePage.dart';
-import '../Module/RecipeSuggestionPage.dart';
+import 'HistoryPage.dart';
+import 'CaloriesCalculatorPage.dart';
+import 'ExercisePage.dart';
+import 'RecipeSuggestionPage.dart';
 
 class MainMenuPage extends StatefulWidget {
   final String username;
