@@ -91,7 +91,7 @@ class _RecipeSuggestionPageState extends State<RecipeSuggestionPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Balanced Diet Recipes'),
-        backgroundColor: Colors.green,
+        backgroundColor: const Color.fromARGB(255, 175, 76, 76),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -108,7 +108,7 @@ class _RecipeSuggestionPageState extends State<RecipeSuggestionPage> {
             SizedBox(height: 12),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
+                backgroundColor: const Color.fromARGB(255, 175, 76, 76),
                 padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               ),
               onPressed: _generateRecipes,
