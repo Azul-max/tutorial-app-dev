@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'HistoryPage.dart'; // Ensure this file exists
+import 'package:shared_preferences/shared_preferences.dart';
+import 'HistoryPage.dart'; // Make sure this file exists
 
 class ProfilePage extends StatefulWidget {
   final String name;
@@ -33,6 +34,27 @@ class _ProfilePageState extends State<ProfilePage> {
     heightController = TextEditingController();
     targetCaloriesController = TextEditingController(text: widget.targetCalories);
     goalsController = TextEditingController();
+    _loadProfileData();
+  }
+
+  Future<void> _loadProfileData() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      ageController.text = prefs.getString('age') ?? '';
+      weightController.text = prefs.getString('weight') ?? '';
+      heightController.text = prefs.getString('height') ?? '';
+      targetCaloriesController.text = prefs.getString('targetCalories') ?? '';
+      goalsController.text = prefs.getString('goals') ?? '';
+    });
+  }
+
+  Future<void> _saveProfileData() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('age', ageController.text);
+    await prefs.setString('weight', weightController.text);
+    await prefs.setString('height', heightController.text);
+    await prefs.setString('targetCalories', targetCaloriesController.text);
+    await prefs.setString('goals', goalsController.text);
   }
 
   @override
@@ -113,15 +135,15 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
               const SizedBox(height: 32),
 
-              // Submit / Save Button
+              // Save Button
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: () {
+                  onPressed: () async {
                     if (_formKey.currentState!.validate()) {
-                      // Save logic here
+                      await _saveProfileData();
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Profile updated!')),
+                        const SnackBar(content: Text('Profile updated and saved!')),
                       );
                     }
                   },
