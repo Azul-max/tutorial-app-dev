@@ -336,7 +336,7 @@ class _HistoryPageState extends State<HistoryPage> {
                                     subtitle: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        Text('${calories} kcal'),
+                                        Text('$calories kcal'),
                                         const SizedBox(height: 4),
                                         Text('Logged at: $formattedTime',
                                             style: const TextStyle(fontSize: 13, color: Colors.grey)),
