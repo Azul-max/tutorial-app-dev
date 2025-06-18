@@ -191,7 +191,7 @@ class _CreateFoodPageState extends State<CreateFoodPage> {
                     Navigator.pop(context); // Close the dialog
                   },
                   child: CircleAvatar(
-                    backgroundColor: _selectedEmoji == emoji ? Colors.green.shade100 : Colors.grey.shade100,
+                    backgroundColor: _selectedEmoji == emoji ? const Color.fromARGB(255, 230, 200, 200) : Colors.grey.shade100,
                     child: Text(
                       emoji,
                       style: const TextStyle(fontSize: 24),
