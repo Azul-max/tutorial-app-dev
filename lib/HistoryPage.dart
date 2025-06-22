@@ -17,45 +17,58 @@ class _HistoryPageState extends State<HistoryPage> {
   DateTime _focusedDay = DateTime.now();
   DateTime _selectedDay = DateTime.now(); // Initialize with today's date
 
-  List<Map<String, dynamic>> _allMeals = []; // Stores all meals loaded from SharedPreferences
-  List<Map<String, dynamic>> _historyEntries = []; // Stores filtered meals for the selected day
+  List<Map<String, dynamic>> _allEntries = []; // Stores all meals and exercises loaded from SharedPreferences
+  List<Map<String, dynamic>> _historyEntries = []; // Stores filtered entries for the selected day
   bool _isLoading = true; // State to manage loading
 
   @override
   void initState() {
     super.initState();
-    _loadAllMealsAndFilter(_selectedDay); // Load history for the initially selected day (today)
+    _loadAllEntriesAndFilter(_selectedDay); // Load history for the initially selected day (today)
   }
 
-  // Function to load all entries from SharedPreferences and then filter them by date
-  Future<void> _loadAllMealsAndFilter(DateTime dateToFilter) async {
+  // Function to load all entries (meals and exercises) from SharedPreferences and then filter them by date
+  Future<void> _loadAllEntriesAndFilter(DateTime dateToFilter) async {
     setState(() {
       _isLoading = true; // Set loading to true when starting to load
     });
 
     final prefs = await SharedPreferences.getInstance();
     final List<String> mealListJson = prefs.getStringList('meals') ?? [];
-    List<Map<String, dynamic>> loadedAllMeals = [];
+    final List<String> exerciseListJson = prefs.getStringList('exercises') ?? [];
 
+    List<Map<String, dynamic>> loadedAllEntries = [];
+
+    // Load meals
     for (String entryJson in mealListJson) {
       try {
         final decoded = jsonDecode(entryJson) as Map<String, dynamic>;
-        // Ensure 'imagePath' is removed if it exists, as per original logic
+        // Ensure 'imagePath' is removed if it exists, as per original logic for meals
         decoded.remove('imagePath');
-        loadedAllMeals.add(decoded);
+        loadedAllEntries.add(decoded);
       } catch (e) {
         print('Error parsing meal entry from storage: $e');
       }
     }
 
-    // Update the master list of all meals
-    _allMeals = loadedAllMeals;
+    // Load exercises
+    for (String entryJson in exerciseListJson) {
+      try {
+        final decoded = jsonDecode(entryJson) as Map<String, dynamic>;
+        loadedAllEntries.add(decoded);
+      } catch (e) {
+        print('Error parsing exercise entry from storage: $e');
+      }
+    }
+
+    // Update the master list of all entries
+    _allEntries = loadedAllEntries;
 
     // Now, filter this master list based on the selected date
     final selectedDateOnly = DateTime(dateToFilter.year, dateToFilter.month, dateToFilter.day);
     List<Map<String, dynamic>> filteredEntries = [];
 
-    for (var entry in _allMeals) {
+    for (var entry in _allEntries) {
       if (entry['dateTime'] != null) {
         try {
           final entryDateTime = DateTime.parse(entry['dateTime']);
@@ -83,37 +96,54 @@ class _HistoryPageState extends State<HistoryPage> {
     });
   }
 
-  // Function to save the entire _allMeals list back to SharedPreferences
-  Future<void> _saveAllMeals() async {
+  // Function to save the entire _allEntries list back to SharedPreferences
+  // This now re-separates entries into 'meals' and 'exercises' lists
+  Future<void> _saveAllEntries() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    List<String> mealListJson = _allMeals.map((e) => jsonEncode(e)).toList();
+    List<String> mealListJson = [];
+    List<String> exerciseListJson = [];
+
+    for (var entry in _allEntries) {
+      if (entry['type'] == 'Food') {
+        mealListJson.add(jsonEncode(entry));
+      } else if (entry['type'] == 'Exercise') {
+        exerciseListJson.add(jsonEncode(entry));
+      }
+    }
+
     await prefs.setStringList('meals', mealListJson);
+    await prefs.setStringList('exercises', exerciseListJson);
   }
 
-  void _deleteMeal(int index) async {
+  // Deletes an entry from the history
+  void _deleteEntry(int index) async {
     // Get the item to delete from the currently displayed filtered list
     final entryToDelete = _historyEntries[index];
 
-    // Find and remove this item from the master list (_allMeals)
+    // Find and remove this item from the master list (_allEntries)
     // This is crucial to avoid data loss. We identify by content as there's no unique ID.
-    _allMeals.removeWhere((entry) =>
+    _allEntries.removeWhere((entry) =>
         entry['name'] == entryToDelete['name'] &&
         entry['type'] == entryToDelete['type'] &&
         entry['cal'] == entryToDelete['cal'] &&
-        entry['dateTime'] == entryToDelete['dateTime']); // Use all properties for a strong match
+        entry['dateTime'] == entryToDelete['dateTime'] &&
+        entry['duration'] == entryToDelete['duration']); // Include duration for exercise match
 
-    await _saveAllMeals(); // Save the updated master list
-    await _loadAllMealsAndFilter(_selectedDay); // Reload and re-filter for the current date
+    await _saveAllEntries(); // Save the updated master list
+    await _loadAllEntriesAndFilter(_selectedDay); // Reload and re-filter for the current date
   }
 
-  void _editMeal(int index) {
+  // Edits an entry in the history
+  void _editEntry(int index) {
     // Get the item to edit from the currently displayed filtered list
     final entryToEdit = _historyEntries[index];
-    
+
     TextEditingController nameController =
         TextEditingController(text: entryToEdit['name']);
     TextEditingController calController =
         TextEditingController(text: entryToEdit['cal'].toString());
+    TextEditingController durationController =
+        TextEditingController(text: entryToEdit['duration']?.toString() ?? '');
 
     showDialog(
       context: context,
@@ -131,27 +161,38 @@ class _HistoryPageState extends State<HistoryPage> {
               keyboardType: TextInputType.number,
               decoration: const InputDecoration(labelText: 'Calories'),
             ),
+            if (entryToEdit['type'] == 'Exercise') // Show duration only for exercise
+              TextField(
+                controller: durationController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: 'Duration (min)'),
+              ),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () async {
-              // Find the original item in the master list (_allMeals) and update it
+              // Find the original item in the master list (_allEntries) and update it
               // Again, relying on matching properties for identification
-              final originalEntryIndex = _allMeals.indexWhere((entry) =>
+              final originalEntryIndex = _allEntries.indexWhere((entry) =>
                   entry['name'] == entryToEdit['name'] &&
                   entry['type'] == entryToEdit['type'] &&
                   entry['cal'] == entryToEdit['cal'] &&
-                  entry['dateTime'] == entryToEdit['dateTime']);
+                  entry['dateTime'] == entryToEdit['dateTime'] &&
+                  entry['duration'] == entryToEdit['duration']); // Include duration for exercise match
 
               if (originalEntryIndex != -1) {
                 setState(() {
-                  _allMeals[originalEntryIndex]['name'] = nameController.text;
-                  _allMeals[originalEntryIndex]['cal'] =
-                      int.tryParse(calController.text) ?? _allMeals[originalEntryIndex]['cal'];
+                  _allEntries[originalEntryIndex]['name'] = nameController.text;
+                  _allEntries[originalEntryIndex]['cal'] =
+                      int.tryParse(calController.text) ?? _allEntries[originalEntryIndex]['cal'];
+                  if (_allEntries[originalEntryIndex]['type'] == 'Exercise') {
+                    _allEntries[originalEntryIndex]['duration'] =
+                        int.tryParse(durationController.text) ?? _allEntries[originalEntryIndex]['duration'];
+                  }
                 });
-                await _saveAllMeals(); // Save the updated master list
-                await _loadAllMealsAndFilter(_selectedDay); // Reload and re-filter for the current date
+                await _saveAllEntries(); // Save the updated master list
+                await _loadAllEntriesAndFilter(_selectedDay); // Reload and re-filter for the current date
               }
               Navigator.pop(context);
             },
@@ -166,6 +207,7 @@ class _HistoryPageState extends State<HistoryPage> {
     );
   }
 
+  // Helper widget to build ingredient list for food entries
   Widget _buildIngredientList(List ingredients) {
     if (ingredients.isEmpty) return const SizedBox.shrink(); // Don't show if empty
     return Column(
@@ -212,7 +254,7 @@ class _HistoryPageState extends State<HistoryPage> {
                     _selectedDay = selectedDay;
                     _focusedDay = focusedDay; // update `_focusedDay` here as well
                   });
-                  _loadAllMealsAndFilter(selectedDay); // Load history for the newly selected day
+                  _loadAllEntriesAndFilter(selectedDay); // Load history for the newly selected day
                 }
               },
               calendarFormat: _calendarFormat,
@@ -294,6 +336,7 @@ class _HistoryPageState extends State<HistoryPage> {
                           final String name = entry['name'] ?? 'Unknown';
                           final String type = entry['type'] ?? 'N/A'; // Food or Exercise
                           final int calories = entry['cal'] ?? 0;
+                          final int? duration = entry['duration']; // Get duration for exercise
                           final DateTime? entryTime = entry['dateTime'] != null
                               ? DateTime.tryParse(entry['dateTime'])?.toLocal()
                               : null;
@@ -337,6 +380,8 @@ class _HistoryPageState extends State<HistoryPage> {
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Text('$calories kcal'),
+                                        if (type == 'Exercise' && duration != null) // Show duration only for exercise
+                                          Text('$duration minutes', style: const TextStyle(fontSize: 13, color: Colors.grey)),
                                         const SizedBox(height: 4),
                                         Text('Logged at: $formattedTime',
                                             style: const TextStyle(fontSize: 13, color: Colors.grey)),
@@ -355,11 +400,11 @@ class _HistoryPageState extends State<HistoryPage> {
                                       children: [
                                         IconButton(
                                           icon: const Icon(Icons.edit, color: Colors.orange),
-                                          onPressed: () => _editMeal(index),
+                                          onPressed: () => _editEntry(index),
                                         ),
                                         IconButton(
                                           icon: const Icon(Icons.delete, color: Colors.red),
-                                          onPressed: () => _deleteMeal(index),
+                                          onPressed: () => _deleteEntry(index),
                                         ),
                                       ],
                                     ),
