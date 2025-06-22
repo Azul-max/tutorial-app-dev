@@ -1,31 +1,23 @@
-// lib/Module/ExercisePage.dart
-
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart'; // Still needed for init and direct calls
-import 'dart:convert'; // Still needed for direct calls
-// import 'package:intl/intl.dart'; // THIS LINE IS NOW REMOVED - it's used in _exercise_ui_widgets.dart
-
-// Import the new data manager and UI widgets
-import '_exercise_data_manager.dart';
-import '_exercise_ui_widgets.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
+import 'package:intl/intl.dart';
 
 class ExercisePage extends StatefulWidget {
   const ExercisePage({super.key});
 
   @override
-  _ExercisePageState createState() => _ExercisePageState();
+  ExercisePageState createState() => ExercisePageState();
 }
 
-class _ExercisePageState extends State<ExercisePage> {
-  // Controllers
+class ExercisePageState extends State<ExercisePage> {
   final _formKey = GlobalKey<FormState>();
   final _exerciseController = TextEditingController();
   final _caloriesBurnedController = TextEditingController();
   final _durationController = TextEditingController();
   final _searchController = TextEditingController();
 
-  // Data & State variables
-  Map<String, dynamic>? _userProfile; // For profile dialog
+  Map<String, dynamic>? _userProfile;
   List<Map<String, dynamic>> _recentExercises = [];
   List<Map<String, dynamic>> _filteredExercises = [];
   String? _selectedExercise;
@@ -36,7 +28,7 @@ class _ExercisePageState extends State<ExercisePage> {
   String _filterPeriod = 'All';
   String _sortBy = 'Newest';
 
-  // Constants (moved from data manager for simplicity, can be moved further if needed)
+  // Constants for exercise suggestions and rates
   final List<String> _exerciseSuggestions = [
     'Running', 'Cycling', 'Swimming', 'Walking', 'Yoga',
     'Weight Training', 'HIIT', 'Pilates', 'Dancing', 'Jump Rope'
@@ -47,22 +39,18 @@ class _ExercisePageState extends State<ExercisePage> {
     'Dancing': 6.0, 'Jump Rope': 11.0,
   };
   final List<String> _motivationalMessages = [
-    "You're doing amazing! Keep pushing! 💪", "Every minute counts! You've got this! 🔥",
+    "You're doing amazing! Keep pushing! 💪", "Every minute counts! You've got this! �",
     "Your future self will thank you! 🌟", "Stronger than yesterday! Keep going! 🚀",
     "Pain is temporary, pride is forever! ✨", "Make sweat your best accessory today! 💦",
     "You're one step closer to your goals! 👟", "The only bad workout is the one you didn't do! 👍",
     "Your effort today is your result tomorrow! 🌈", "Beast mode activated! 🦁"
   ];
 
-
-  // DataManager instance
-  late ExerciseDataManager _dataManager;
-
   @override
   void initState() {
     super.initState();
-    _dataManager = ExerciseDataManager(); // Initialize data manager
-    _loadAllData();
+    _loadUserProfile(); // Load user profile first
+    _loadRecentExercises(); // Then load exercises and update progress
     _caloriesBurnedController.addListener(_calculateDuration);
     _searchController.addListener(_filterExercises);
   }
@@ -77,25 +65,48 @@ class _ExercisePageState extends State<ExercisePage> {
     super.dispose();
   }
 
-  // Load all necessary data
-  Future<void> _loadAllData() async {
-    await _dataManager.loadUserProfile();
-    await _dataManager.loadRecentExercises(); // Load all exercises first
-    setState(() {
-      _userProfile = _dataManager.userProfile;
-      _recentExercises = _dataManager.recentExercises;
-      _filterExercises(); // Apply initial filter (All)
-      _calculateWeeklyProgress();
-    });
-  }
-
+  // Filters exercises based on search query, period, and sort order.
+  // This method updates _filteredExercises without calling setState,
+  // expecting the caller to trigger setState.
   void _filterExercises() {
     final query = _searchController.text.toLowerCase();
-    setState(() {
-      _filteredExercises = _dataManager.filterExercises(query, _filterPeriod, _sortBy);
+    DateTime now = DateTime.now();
+
+    List<Map<String, dynamic>> filtered = _recentExercises.where((exercise) {
+      final matchesQuery = exercise['name'].toLowerCase().contains(query);
+      final DateTime exerciseDate = exercise['dateTime'];
+
+      if (_filterPeriod == 'Today') {
+        return matchesQuery &&
+            exerciseDate.year == now.year &&
+            exerciseDate.month == now.month &&
+            exerciseDate.day == now.day;
+      }
+      if (_filterPeriod == 'This Week') {
+        DateTime startOfWeek = now.subtract(Duration(days: now.weekday - 1)).copyWith(
+          hour: 0, minute: 0, second: 0, millisecond: 0, microsecond: 0);
+        return matchesQuery && (exerciseDate.isAfter(startOfWeek) || exerciseDate.isAtSameMomentAs(startOfWeek));
+      }
+      return matchesQuery; // 'All'
+    }).toList();
+
+    filtered.sort((a, b) {
+      if (_sortBy == 'Newest') {
+        return b['dateTime'].compareTo(a['dateTime']);
+      }
+      if (_sortBy == 'Oldest') {
+        return a['dateTime'].compareTo(b['dateTime']);
+      }
+      if (_sortBy == 'Calories') {
+        return b['calories'].compareTo(a['calories']);
+      }
+      return 0; // Default
     });
+
+    _filteredExercises = filtered; // Update directly
   }
 
+  // Displays a random motivational message as a temporary notification.
   void _showMotivationalNotification() {
     final random = DateTime.now().millisecondsSinceEpoch % _motivationalMessages.length;
     setState(() {
@@ -112,6 +123,7 @@ class _ExercisePageState extends State<ExercisePage> {
     });
   }
 
+  // Calculates the duration of an exercise based on calories burned and exercise rate.
   void _calculateDuration() {
     if (_selectedExercise != null && _caloriesBurnedController.text.isNotEmpty) {
       final calories = int.tryParse(_caloriesBurnedController.text) ?? 0;
@@ -135,16 +147,126 @@ class _ExercisePageState extends State<ExercisePage> {
     }
   }
 
-  void _calculateWeeklyProgress() {
-    int weeklyCalorieTarget = _userProfile?['weeklyTarget'] ?? 5000;
-    int totalCalories = _dataManager.getWeeklyCaloriesBurned();
-    setState(() {
-      _weeklyProgress = (totalCalories / weeklyCalorieTarget).clamp(0.0, 1.0);
-    });
+  // Loads user profile information from SharedPreferences.
+  Future<void> _loadUserProfile() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    final String? loggedInUserJson = prefs.getString('loggedInUser');
+    if (loggedInUserJson != null) {
+      final Map<String, dynamic> loggedInUser = jsonDecode(loggedInUserJson);
+      final String username = loggedInUser['username'] ?? 'User';
+
+      final String? storedUsersJson = prefs.getString('registered_users');
+      if (storedUsersJson != null) {
+        final Map<String, dynamic> decodedUsers = jsonDecode(storedUsersJson);
+        final String normalizedUsername = username.toLowerCase();
+
+        if (decodedUsers.containsKey(normalizedUsername)) {
+          final user = decodedUsers[normalizedUsername];
+          _userProfile = {
+            'name': user['username'] ?? 'User Name',
+            'targetCalories': int.tryParse(user['targetCalories']?.toString() ?? '0') ?? 2000,
+          };
+        }
+      }
+    }
+
+    final String? userGoalsJson = prefs.getString('userGoals');
+    if (userGoalsJson != null) {
+      try {
+        final Map<String, dynamic> goals = jsonDecode(userGoalsJson);
+        _userProfile ??= {}; // Initialize if null
+        _userProfile!['weight'] = (goals['currentWeight'] ?? 0.0).toStringAsFixed(1);
+        _userProfile!['height'] = (goals['height'] ?? 0.0).toStringAsFixed(1);
+        _userProfile!['goal'] = goals['goalType'] ?? 'Not set';
+      } catch (e) {
+        print('Error decoding user goals JSON: $e');
+      }
+    }
+
+    _userProfile ??= {};
+    _userProfile!['weeklyTarget'] = (_userProfile!['targetCalories'] as int? ?? 2000) * 7;
+
+    setState(() {}); // Trigger rebuild after profile is loaded
   }
 
+  // Loads recent exercises from SharedPreferences and applies filters/sorting.
+  // Then triggers a single setState for UI update.
+  Future<void> _loadRecentExercises() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    List<String> exercises = prefs.getStringList('exercises') ?? [];
+
+    List<Map<String, dynamic>> allExercises = exercises.map((e) {
+      Map<String, dynamic> decoded = jsonDecode(e);
+      return {
+        'name': decoded['name'],
+        'calories': decoded['cal'],
+        'duration': decoded['duration'] ?? 0,
+        'dateTime': DateTime.parse(decoded['dateTime']),
+      };
+    }).toList();
+
+    _recentExercises = allExercises; // Update the master list immediately
+
+    // Recalculate filtered exercises and weekly progress without separate setState calls
+    _filterExercises();
+    _calculateWeeklyProgress(); // This will update _weeklyProgress
+
+    // Finally, trigger a single setState to rebuild the UI with all updated data
+    setState(() {});
+  }
+
+  // Gets total calories burned for today.
+  int _getTodayCalories() {
+    DateTime today = DateTime.now();
+    return _recentExercises
+        .where((ex) =>
+            ex['dateTime'].day == today.day &&
+            ex['dateTime'].month == today.month &&
+            ex['dateTime'].year == today.year)
+        .fold(0, (int sum, ex) => sum + (ex['calories'] as int));
+  }
+
+  // Gets total active minutes for today.
+  int _getTodayMinutes() {
+    DateTime today = DateTime.now();
+    return _recentExercises
+        .where((ex) =>
+            ex['dateTime'].day == today.day &&
+            ex['dateTime'].month == today.month &&
+            ex['dateTime'].year == today.year)
+        .fold(0, (int sum, ex) => sum + (ex['duration'] as int));
+  }
+
+  // Calculates and updates the weekly progress (state variable).
+  // This method updates _weeklyProgress, and is designed to be called
+  // by _loadRecentExercises or directly by _saveExercise for immediate updates.
+  void _calculateWeeklyProgress() {
+    DateTime now = DateTime.now();
+    DateTime startOfWeek = now.subtract(Duration(days: now.weekday - 1)).copyWith(
+      hour: 0, minute: 0, second: 0, millisecond: 0, microsecond: 0);
+
+    List<Map<String, dynamic>> weeklyExercises = _recentExercises.where((ex) =>
+        ex['dateTime'].isAfter(startOfWeek) || ex['dateTime'].isAtSameMomentAs(startOfWeek)).toList();
+
+    int weeklyCalorieTarget = _userProfile?['weeklyTarget'] ?? 5000;
+    double progressValue;
+    if (weeklyExercises.isNotEmpty && weeklyCalorieTarget > 0) {
+      int totalCalories = weeklyExercises.fold(0, (int sum, ex) => sum + (ex['calories'] as int));
+      progressValue = (totalCalories / weeklyCalorieTarget).clamp(0.0, 1.0);
+    } else {
+      progressValue = 0.0;
+    }
+
+    _weeklyProgress = progressValue; // Update _weeklyProgress directly
+  }
+
+  // Saves a new exercise entry to SharedPreferences.
   Future<void> _saveExercise() async {
     if (!_formKey.currentState!.validate()) return;
+
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    List<String> exercises = prefs.getStringList('exercises') ?? [];
 
     final newEntry = {
       'name': _exerciseController.text,
@@ -154,8 +276,10 @@ class _ExercisePageState extends State<ExercisePage> {
       'dateTime': DateTime.now().toIso8601String(),
     };
 
-    await _dataManager.saveExercise(newEntry);
+    exercises.add(jsonEncode(newEntry));
+    await prefs.setStringList('exercises', exercises);
 
+    // Clear controllers and reset selected exercise
     _exerciseController.clear();
     _caloriesBurnedController.clear();
     _durationController.clear();
@@ -178,6 +302,7 @@ class _ExercisePageState extends State<ExercisePage> {
       ),
     );
 
+    // Checkmark animation dialog
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -188,20 +313,22 @@ class _ExercisePageState extends State<ExercisePage> {
             borderRadius: BorderRadius.circular(50),
           ),
           padding: const EdgeInsets.all(20),
-          child: const Icon(Icons.check, color: Color.fromARGB(255, 175, 76, 76), size: 50),
+          child: const Icon(Icons.check, color: Colors.green, size: 50),
         ),
       ),
     );
 
     Future.delayed(const Duration(milliseconds: 500), () {
       Navigator.pop(context); // Pop the dialog
-      Navigator.pop(context, true); // Signal successful save to previous page
     });
 
-    _loadAllData(); // Reload all data to update UI
+    // Explicitly reload data and update progress within a setState
+    // to ensure the UI rebuilds with the latest _weeklyProgress
+    await _loadRecentExercises(); // This will update _recentExercises, _filteredExercises, and _weeklyProgress internally
     _showMotivationalNotification();
   }
 
+  // Shows a dialog with user profile information.
   void _showProfileDialog() {
     showDialog(
       context: context,
@@ -213,9 +340,9 @@ class _ExercisePageState extends State<ExercisePage> {
           children: [
             Text('Name: ${_userProfile?['name'] ?? 'N/A'}'),
             const SizedBox(height: 8),
-            Text('Weight: ${_userProfile?['weight'] ?? 'N/A'}'),
+            Text('Weight: ${_userProfile?['weight'] ?? 'N/A'} kg'),
             const SizedBox(height: 8),
-            Text('Height: ${_userProfile?['height'] ?? 'N/A'}'),
+            Text('Height: ${_userProfile?['height'] ?? 'N/A'} cm'),
             const SizedBox(height: 8),
             Text('Goal: ${_userProfile?['goal'] ?? 'N/A'}'),
             const SizedBox(height: 8),
@@ -232,20 +359,242 @@ class _ExercisePageState extends State<ExercisePage> {
     );
   }
 
+  // Determines the appropriate icon for a given exercise name.
+  IconData _getExerciseIcon(String exerciseName) {
+    switch (exerciseName.toLowerCase()) {
+      case 'running':
+        return Icons.directions_run;
+      case 'cycling':
+        return Icons.directions_bike;
+      case 'swimming':
+        return Icons.pool;
+      case 'walking':
+        return Icons.directions_walk;
+      case 'yoga':
+        return Icons.self_improvement;
+      case 'weight training':
+        return Icons.fitness_center;
+      case 'hiit':
+        return Icons.timer;
+      case 'pilates':
+        return Icons.airline_seat_recline_normal;
+      case 'dancing':
+        return Icons.music_note;
+      case 'jump rope':
+        return Icons.cable;
+      default:
+        return Icons.sports;
+    }
+  }
+
+  // Builds a card widget to display individual exercise details.
+  Widget _buildExerciseCard(Map<String, dynamic> exercise) {
+    final exerciseImages = {
+      'Running': 'assets/running.jpg',
+      'Cycling': 'assets/cycling.jpeg', // Adjusted to .jpeg based on common image extensions
+      'Swimming': 'assets/swimming.jpg',
+      'Walking': 'assets/walking.jpg',
+      'Yoga': 'assets/yoga.jpg',
+      'Weight Training': 'assets/weight_training.jpg',
+      'HIIT': 'assets/hiit.jpg',
+      'Pilates': 'assets/pilates.jpg',
+      'Dancing': 'assets/dancing.jpg',
+      'Jump Rope': 'assets/jump_rope.jpg',
+    };
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      elevation: 3,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+            child: Image.asset(
+              exerciseImages[exercise['name']] ?? 'assets/default.jpg',
+              height: 120,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) => Container(
+                height: 120,
+                color: Colors.grey[200],
+                child: const Icon(Icons.image_not_supported, size: 50, color: Colors.grey),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(_getExerciseIcon(exercise['name'])),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        exercise['name'],
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('${exercise['calories']} cal'),
+                    Text('${exercise['duration']} mins'),
+                    Text(
+                      DateFormat('hh:mm a').format(exercise['dateTime']),
+                      style: TextStyle(color: Colors.grey[600]),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Determines the color for the progress bar based on its value.
   Color _getProgressColor(double value) {
     if (value < 0.25) return Colors.red;
     if (value < 0.5) return Colors.orange;
     if (value < 0.75) return Colors.lightGreen;
-    return const Color.fromARGB(255, 230, 233, 230);
+    return Colors.green;
+  }
+
+  // Builds a summary card for weekly exercise progress.
+  Widget _buildWeeklySummary() {
+    int weeklyCalorieTarget = _userProfile?['weeklyTarget'] ?? 5000;
+    // Recalculate totalCalories and totalMinutes here based on _recentExercises
+    // to ensure they reflect the latest data for display in this widget.
+    int totalCalories = _recentExercises
+        .where((ex) => ex['dateTime'].isAfter(
+            DateTime.now().subtract(Duration(days: DateTime.now().weekday - 1)).copyWith(
+              hour: 0, minute: 0, second: 0, millisecond: 0, microsecond: 0)))
+        .fold(0, (int sum, ex) => sum + (ex['calories'] as int));
+    int totalMinutes = _recentExercises
+        .where((ex) => ex['dateTime'].isAfter(
+            DateTime.now().subtract(Duration(days: DateTime.now().weekday - 1)).copyWith(
+              hour: 0, minute: 0, second: 0, millisecond: 0, microsecond: 0)))
+        .fold(0, (int sum, ex) => sum + (ex['duration'] as int));
+
+    // The _weeklyProgress field is now correctly updated by _calculateWeeklyProgress
+    double progress = _weeklyProgress; 
+
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 8.0),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'WEEKLY SUMMARY (Current Week)',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Calories Burned:'),
+                Text(
+                  '$totalCalories cal',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Active Minutes:'),
+                Text(
+                  '$totalMinutes min',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            LinearProgressIndicator(
+              value: progress,
+              backgroundColor: Colors.grey[200],
+              valueColor: AlwaysStoppedAnimation<Color>(
+                  _getProgressColor(progress)),
+              minHeight: 10,
+              borderRadius: BorderRadius.circular(5),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('${(progress * 100).toStringAsFixed(0)}% of weekly goal'),
+                Text(
+                  '${(weeklyCalorieTarget - totalCalories).ceil()} cal remaining',
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            if (progress >= 1.0)
+              Text(
+                'Congratulations! You\'ve reached your weekly goal! 🎉',
+                style: TextStyle(
+                  color: Colors.purple[700],
+                  fontStyle: FontStyle.italic,
+                  fontWeight: FontWeight.bold,
+                ),
+              )
+            else if (progress > 0.75)
+              Text(
+                'You\'re crushing your goals! Keep it up! 🎯',
+                style: TextStyle(
+                  color: Colors.green[700],
+                  fontStyle: FontStyle.italic,
+                ),
+              )
+            else if (progress > 0.5)
+              Text(
+                'Great progress! Halfway there! 💪',
+                style: TextStyle(
+                  color: Colors.orange[700],
+                  fontStyle: FontStyle.italic,
+                ),
+              )
+            else if (progress > 0.25)
+              Text(
+                'Good start! Keep going strong! 🔥',
+                style: TextStyle(
+                  color: Colors.blue[700],
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    int netCalories = (_userProfile?['targetCalories'] ?? 2000 - _dataManager.getTodayCaloriesBurned() + _dataManager.getTodayMinutesBurned()).round();
-    int caloriesLeftDisplay = netCalories > 0 ? netCalories : 0; // Use dataManager for today's data
-
     return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 245, 232, 232),
+      backgroundColor: const Color.fromARGB(255, 241, 227, 227),
       appBar: AppBar(
         title: const Text('EXERCISE TRACKER', style: TextStyle(color: Colors.black)),
         backgroundColor: const Color.fromARGB(255, 175, 76, 76),
@@ -327,8 +676,6 @@ class _ExercisePageState extends State<ExercisePage> {
                       });
                       _calculateDuration();
                     },
-                    selectedColor: const Color.fromARGB(255, 214, 165, 165),
-                    checkmarkColor: const Color.fromARGB(255, 94, 27, 27),
                   );
                 }).toList(),
               ),
@@ -347,7 +694,7 @@ class _ExercisePageState extends State<ExercisePage> {
                         children: [
                           const Text("TODAY'S BURN"),
                           Text(
-                            _dataManager.getTodayCaloriesBurned().toString(),
+                            _getTodayCalories().toString(),
                             style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                           ),
                           const Text("calories"),
@@ -357,7 +704,7 @@ class _ExercisePageState extends State<ExercisePage> {
                         children: [
                           const Text("ACTIVE TIME"),
                           Text(
-                            "${_dataManager.getTodayMinutesBurned()} min",
+                            "${_getTodayMinutes()} min",
                             style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                           ),
                           const Text("minutes"),
@@ -385,7 +732,7 @@ class _ExercisePageState extends State<ExercisePage> {
                           value: exercise,
                           child: Row(
                             children: [
-                              Icon(ExerciseUIWidgets.getExerciseIcon(exercise)),
+                              Icon(_getExerciseIcon(exercise)),
                               const SizedBox(width: 10),
                               Text(exercise),
                             ],
@@ -486,8 +833,10 @@ class _ExercisePageState extends State<ExercisePage> {
                           DropdownMenuItem(value: 'This Week', child: Text('This Week')),
                         ],
                         onChanged: (value) {
-                          setState(() => _filterPeriod = value!);
-                          _filterExercises(); // Trigger filter after period change
+                          setState(() {
+                            _filterPeriod = value!;
+                            _filterExercises(); // Trigger filter after period change
+                          });
                         },
                       ),
                       const SizedBox(width: 10),
@@ -500,8 +849,10 @@ class _ExercisePageState extends State<ExercisePage> {
                           DropdownMenuItem(value: 'Calories', child: Text('Calories')),
                         ],
                         onChanged: (value) {
-                          setState(() => _sortBy = value!);
-                          _filterExercises(); // Trigger filter after sort change
+                          setState(() {
+                            _sortBy = value!;
+                            _filterExercises(); // Trigger filter after sort change
+                          });
                         },
                       ),
                     ],
@@ -537,12 +888,12 @@ class _ExercisePageState extends State<ExercisePage> {
                         itemCount: _filteredExercises.length,
                         itemBuilder: (context, index) => SizedBox(
                           width: 180,
-                          child: ExerciseUIWidgets.buildExerciseCard(_filteredExercises[index]),
+                          child: _buildExerciseCard(_filteredExercises[index]),
                         ),
                       ),
               ),
               const SizedBox(height: 20),
-              ExerciseUIWidgets.buildWeeklySummary(_weeklyProgress, _userProfile?['weeklyTarget'] ?? 5000, _dataManager.getWeeklyCaloriesBurned(), _dataManager.getWeeklyMinutesBurned()),
+              _buildWeeklySummary(),
             ],
           ),
         ),
